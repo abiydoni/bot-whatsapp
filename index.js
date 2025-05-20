@@ -2,12 +2,10 @@ const {
   default: makeWASocket,
   useSingleFileAuthState,
 } = require("@whiskeysockets/baileys");
-const fs = require("fs");
 const axios = require("axios");
-const { Boom } = require("@hapi/boom");
+const fs = require("fs");
 
-const authFile = "./session.json";
-const { state, saveState } = useSingleFileAuthState(authFile);
+const { state, saveState } = useSingleFileAuthState("./session.json");
 
 async function startBot() {
   const sock = makeWASocket({
