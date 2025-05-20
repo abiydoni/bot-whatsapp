@@ -1,7 +1,6 @@
 const {
-  default: makeWASocket,
   useSingleFileAuthState,
-} = require("@whiskeysockets/baileys");
+} = require("@whiskeysockets/baileys/lib/utils/auth-files");
 const axios = require("axios");
 const fs = require("fs");
 
