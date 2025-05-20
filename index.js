@@ -1,6 +1,6 @@
 const {
   useSingleFileAuthState,
-} = require("@whiskeysockets/baileys/lib/utils/auth-files");
+} = require("@whiskeysockets/baileys/lib/auth-utils");
 const axios = require("axios");
 const fs = require("fs");
 
