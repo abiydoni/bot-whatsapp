@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.17.16",
+    "@whiskeysockets/baileys": "^6.7.1",
+    "mysql2": "^3.x",
+    "pino": "^8.x",
     "axios": "^1.9.0",
     "express": "^5.1.0",
     "qrcode": "^1.5.4"
