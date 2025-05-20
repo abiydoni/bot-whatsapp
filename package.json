@@ -9,10 +9,18 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.17.16",
     "express": "^5.1.0",
     "qrcode": "^1.5.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abiydoni/bot-whatsapp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/abiydoni/bot-whatsapp/issues"
+  },
+  "homepage": "https://github.com/abiydoni/bot-whatsapp#readme",
+  "description": ""
 }
