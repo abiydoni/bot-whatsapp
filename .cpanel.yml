@@ -1,5 +1,2 @@
----
-deployment:
-  tasks:
-    - export DEPLOYPATH=/home2/appsbeem/public_html/jimpitan
-    - /bin/cp -R * $DEPLOYPATH
+# Auto detect text files and perform LF normalization
+* text=auto
