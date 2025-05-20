@@ -23,8 +23,8 @@
     "url": "https://github.com/abiydoni/bot-whatsapp/issues"
   },
   "homepage": "https://github.com/abiydoni/bot-whatsapp#readme",
-  "description": "",
   "devDependencies": {
     "nodemon": "^3.1.10"
-  }
+  },
+  "description": ""
 }
