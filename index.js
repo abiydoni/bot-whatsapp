@@ -1,14 +1,13 @@
 const makeWASocket = require("@whiskeysockets/baileys").default;
 const {
   useSingleFileAuthState,
-} = require("@whiskeysockets/baileys/lib/Utils/auth");
+} = require("@whiskeysockets/baileys/lib/utils/auth");
 const axios = require("axios");
+const fs = require("fs");
 
-const authFile = "./session.json";
+const { state, saveState } = useSingleFileAuthState("./session.json");
 
 async function startBot() {
-  const { state, saveState } = useSingleFileAuthState(authFile);
-
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: true,
@@ -16,30 +15,24 @@ async function startBot() {
 
   sock.ev.on("creds.update", saveState);
 
-  sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    if (type !== "notify") return;
-
+  sock.ev.on("messages.upsert", async ({ messages }) => {
     const msg = messages[0];
     if (!msg.message || msg.key.fromMe) return;
 
     const nomor = msg.key.remoteJid.split("@")[0];
-    const teksPesan =
-      msg.message.conversation ||
-      msg.message.extendedTextMessage?.text ||
-      msg.message.imageMessage?.caption ||
-      "";
+    const teks = msg.message?.conversation || "";
 
-    console.log(`📥 Pesan dari ${nomor}: ${teksPesan}`);
+    console.log(`Pesan dari ${nomor}: ${teks}`);
 
     try {
       await axios.post("https://botwa.appsbee.my.id/balas_otomatis.php", {
         pengirim: nomor,
-        pesan: teksPesan,
+        pesan: teks,
       });
     } catch (err) {
-      console.error("❌ Gagal kirim ke PHP:", err.message);
+      console.error("Gagal kirim ke server PHP:", err.message);
     }
   });
 }
 
-startBot().catch(console.error);
+startBot().catch((err) => console.error("❌ Error di startBot:", err));
