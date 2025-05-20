@@ -1,7 +1,5 @@
 const baileys = require("@whiskeysockets/baileys");
-const { default: makeWASocket, useSingleFileAuthState } = baileys;
-const axios = require("axios");
-const fs = require("fs");
+const { useSingleFileAuthState, default: makeWASocket } = baileys;
 
 const { state, saveState } = useSingleFileAuthState("./session.json");
 
