@@ -1,2 +1,5 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home2/appsbeem/botwa.appsbee.my.id
+    - /bin/cp -R * $DEPLOYPATH
