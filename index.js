@@ -1,16 +1,14 @@
+const makeWASocket = require("@whiskeysockets/baileys").default;
 const {
-  default: makeWASocket,
   useSingleFileAuthState,
-} = require("@whiskeysockets/baileys");
+} = require("@whiskeysockets/baileys/lib/Utils/auth");
 const axios = require("axios");
-const { Boom } = require("@hapi/boom");
-const fs = require("fs");
-const path = require("path");
 
 const authFile = "./session.json";
-const { state, saveState } = useSingleFileAuthState(authFile);
 
 async function startBot() {
+  const { state, saveState } = useSingleFileAuthState(authFile);
+
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: true,
@@ -44,4 +42,4 @@ async function startBot() {
   });
 }
 
-startBot();
+startBot().catch(console.error);
