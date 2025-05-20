@@ -1,61 +1,89 @@
-const {
-  default: makeWASocket,
-  useSingleFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-} = require("@whiskeysockets/baileys");
-const { Boom } = require("@hapi/boom");
-const fs = require("fs");
+import makeWASocket from "@whiskeysockets/baileys";
+import { useSingleFileAuthState } from "@whiskeysockets/baileys";
+import mysql from "mysql2/promise";
+import P from "pino";
 
-// Lokasi file session
 const SESSION_FILE_PATH = "./session.json";
+
+// Setup auth state
 const { state, saveState } = useSingleFileAuthState(SESSION_FILE_PATH);
 
-async function startBot() {
-  const { version, isLatest } = await fetchLatestBaileysVersion();
-  console.log(`Using WA version ${version.join(".")}, is latest: ${isLatest}`);
+// Buat koneksi MySQL pool (ganti config sesuai DB kamu)
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "appsbeem_admin",
+  password: "A7by777__",
+  database: "appsbeem_jimpitan",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
+// Fungsi buat jalankan query data master_kk
+async function getMasterData() {
+  try {
+    const [rows] = await pool.query(
+      "SELECT code_id, kk_name FROM master_kk LIMIT 10"
+    );
+    return rows;
+  } catch (error) {
+    console.error("DB error:", error);
+    return [];
+  }
+}
+
+async function startBot() {
   const sock = makeWASocket({
-    version,
-    auth: state,
+    logger: P({ level: "silent" }),
     printQRInTerminal: true,
+    auth: state,
   });
 
-  // Simpan session setiap ada perubahan
   sock.ev.on("creds.update", saveState);
 
-  // Respon ketika menerima pesan
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     if (type !== "notify") return;
     const msg = messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+    if (!msg.message || msg.key.fromMe) return; // skip jika pesan sendiri
 
-    const sender = msg.key.remoteJid;
+    const from = msg.key.remoteJid;
     const text =
-      msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+      msg.message.conversation || msg.message?.extendedTextMessage?.text || "";
+    const pesan = text.trim().toLowerCase();
 
-    if (text.toLowerCase() === "ping") {
-      await sock.sendMessage(sender, { text: "pong" });
+    console.log(`Pesan masuk dari ${from}: ${pesan}`);
+
+    let balasan =
+      "Maaf, perintah tidak dikenali. Ketik *cek data* untuk melihat informasi.";
+
+    if (pesan === "cek data") {
+      const data = await getMasterData();
+      if (data.length > 0) {
+        balasan = "📊 *Data Terkini:*\n";
+        data.forEach((row, i) => {
+          balasan += `${i + 1}. ${row.code_id} - ${row.kk_name}\n`;
+        });
+      } else {
+        balasan = "Tidak ada data yang tersedia.";
+      }
     }
+
+    // Kirim balasan
+    await sock.sendMessage(from, { text: balasan });
   });
 
-  // Logika reconnect jika koneksi terputus
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === "close") {
-      const shouldReconnect =
-        lastDisconnect?.error instanceof Boom &&
-        lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut;
-
-      console.log("Connection closed. Reconnecting:", shouldReconnect);
-
-      if (shouldReconnect) {
-        startBot(); // restart ulang
+      if (lastDisconnect?.error?.output?.statusCode !== 401) {
+        console.log("Reconnect...");
+        startBot();
       } else {
-        console.log("Logged out.");
+        console.log("Koneksi terputus, logout diperlukan.");
       }
-    } else if (connection === "open") {
-      console.log("Connected to WhatsApp.");
+    }
+    if (connection === "open") {
+      console.log("Koneksi berhasil, bot siap digunakan");
     }
   });
 }
