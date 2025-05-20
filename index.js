@@ -1,91 +1,74 @@
-import makeWASocket from "@whiskeysockets/baileys";
-import { useSingleFileAuthState } from "@whiskeysockets/baileys";
-import mysql from "mysql2/promise";
-import P from "pino";
+import express from 'express';
+import makeWASocket, { useSingleFileAuthState, fetchLatestBaileysVersion, DisconnectReason } from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
+import { unlinkSync } from 'node:fs';
 
-const SESSION_FILE_PATH = "./session.json";
-
-// Setup auth state
+const SESSION_FILE_PATH = './session.json';
 const { state, saveState } = useSingleFileAuthState(SESSION_FILE_PATH);
+const PORT = 3000;
+const VALID_SESSION_ID = '91e37fbd895dedf2587d3f506ce1718e'; // dari dokumen
 
-// Buat koneksi MySQL pool (ganti config sesuai DB kamu)
-const pool = mysql.createPool({
-  host: "localhost",
-  user: "appsbeem_admin",
-  password: "A7by777__",
-  database: "appsbeem_jimpitan",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-// Fungsi buat jalankan query data master_kk
-async function getMasterData() {
-  try {
-    const [rows] = await pool.query(
-      "SELECT code_id, kk_name FROM master_kk LIMIT 10"
-    );
-    return rows;
-  } catch (error) {
-    console.error("DB error:", error);
-    return [];
-  }
-}
-
-async function startBot() {
+async function startSock() {
+  const { version } = await fetchLatestBaileysVersion();
   const sock = makeWASocket({
-    logger: P({ level: "silent" }),
+    version,
     printQRInTerminal: true,
     auth: state,
   });
 
-  sock.ev.on("creds.update", saveState);
-
-  sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    if (type !== "notify") return;
-    const msg = messages[0];
-    if (!msg.message || msg.key.fromMe) return; // skip jika pesan sendiri
-
-    const from = msg.key.remoteJid;
-    const text =
-      msg.message.conversation || msg.message?.extendedTextMessage?.text || "";
-    const pesan = text.trim().toLowerCase();
-
-    console.log(`Pesan masuk dari ${from}: ${pesan}`);
-
-    let balasan =
-      "Maaf, perintah tidak dikenali. Ketik *cek data* untuk melihat informasi.";
-
-    if (pesan === "cek data") {
-      const data = await getMasterData();
-      if (data.length > 0) {
-        balasan = "📊 *Data Terkini:*\n";
-        data.forEach((row, i) => {
-          balasan += `${i + 1}. ${row.code_id} - ${row.kk_name}\n`;
-        });
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect } = update;
+    if (connection === 'close') {
+      const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log('Connection closed, reconnecting?', shouldReconnect);
+      if (shouldReconnect) {
+        startSock();
       } else {
-        balasan = "Tidak ada data yang tersedia.";
+        console.log('Logged out, removing session file');
+        try {
+          unlinkSync(SESSION_FILE_PATH);
+        } catch {}
       }
+    } else if (connection === 'open') {
+      console.log('Connected to WhatsApp!');
     }
-
-    // Kirim balasan
-    await sock.sendMessage(from, { text: balasan });
   });
 
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect } = update;
-    if (connection === "close") {
-      if (lastDisconnect?.error?.output?.statusCode !== 401) {
-        console.log("Reconnect...");
-        startBot();
-      } else {
-        console.log("Koneksi terputus, logout diperlukan.");
-      }
+  sock.ev.on('creds.update', saveState);
+  return sock;
+}
+
+async function main() {
+  const sock = await startSock();
+
+  const app = express();
+  app.use(express.json());
+
+  // Endpoint POST /send-message sesuai dokumen
+  app.post('/send-message', async (req, res) => {
+    const sessionId = req.headers['x-session-id'];
+    if (sessionId !== VALID_SESSION_ID) {
+      return res.status(401).json({ error: 'Invalid session ID' });
     }
-    if (connection === "open") {
-      console.log("Koneksi berhasil, bot siap digunakan");
+
+    const { phoneNumber, message } = req.body;
+    if (!phoneNumber || !message) {
+      return res.status(400).json({ error: 'phoneNumber dan message wajib diisi' });
     }
+
+    try {
+      const jid = phoneNumber.includes('@s.whatsapp.net') ? phoneNumber : (phoneNumber.startsWith('0') ? `62${phoneNumber.slice(1)}@s.whatsapp.net` : `${phoneNumber}@s.whatsapp.net`);
+      await sock.sendMessage(jid, { text: message });
+      return res.json({ status: 'success', message: `Pesan terkirim ke ${phoneNumber}` });
+    } catch (error) {
+      console.error('Gagal mengirim pesan:', error);
+      return res.status(500).json({ status: 'fail', error: error.toString() });
+    }
+  });
+
+  app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
   });
 }
 
-startBot();
+main().catch(console.error);
