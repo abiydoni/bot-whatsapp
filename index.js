@@ -34,7 +34,7 @@ async function startBot() {
     console.log(`📥 Pesan dari ${nomor}: ${teksPesan}`);
 
     try {
-      await axios.post("http://localhost/balas_otomatis.php", {
+      await axios.post("https://botwa.appsbee.my.id/balas_otomatis.php", {
         pengirim: nomor,
         pesan: teksPesan,
       });
