@@ -1,7 +1,7 @@
-const makeWASocket = require("@whiskeysockets/baileys").default;
 const {
+  default: makeWASocket,
   useSingleFileAuthState,
-} = require("@whiskeysockets/baileys/lib/utils/auth");
+} = require("@whiskeysockets/baileys");
 const axios = require("axios");
 const fs = require("fs");
 
@@ -22,7 +22,7 @@ async function startBot() {
     const nomor = msg.key.remoteJid.split("@")[0];
     const teks = msg.message?.conversation || "";
 
-    console.log(`Pesan dari ${nomor}: ${teks}`);
+    console.log(`📥 Pesan dari ${nomor}: ${teks}`);
 
     try {
       await axios.post("https://botwa.appsbee.my.id/balas_otomatis.php", {
@@ -30,7 +30,7 @@ async function startBot() {
         pesan: teks,
       });
     } catch (err) {
-      console.error("Gagal kirim ke server PHP:", err.message);
+      console.error("❌ Gagal kirim ke server PHP:", err.message);
     }
   });
 }
