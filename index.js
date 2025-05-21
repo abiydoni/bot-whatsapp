@@ -2,48 +2,32 @@ import express from "express";
 import axios from "axios";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
+// Middleware untuk parsing JSON
 app.use(express.json());
 
+// Endpoint untuk menerima pesan masuk dari webhook
 app.post("/webhook", async (req, res) => {
-  const data = req.body;
-
-  if (!data || !data.sender || !data.message) {
-    return res.status(400).json({ error: "Data tidak lengkap" });
-  }
-
-  const phoneNumber = data.sender;
-  const message = data.message;
-
-  console.log(`Pesan diterima dari ${phoneNumber}: ${message}`);
-
-  // Pesan balasan
-  const reply = `Halo! Kami menerima pesan Anda: "${message}"`;
-
   try {
-    await axios.post(
-      "https://wapi.appsbee.my.id/send-message",
-      {
-        phoneNumber,
-        message: reply,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-session-id": "91e37fbd895dedf2587d3f506ce1718e", // disesuaikan
-        },
-      }
-    );
+    const { from, message } = req.body;
 
-    console.log(`Balasan dikirim ke ${phoneNumber}`);
-    res.sendStatus(200);
+    console.log(`Pesan diterima dari ${from}: ${message}`);
+
+    // Kirim balasan melalui API eksternal
+    await axios.post("https://wapi.appsbee.my.id/send-message", {
+      phone: from,
+      message: `Pesan Anda sudah kami terima: ${message}`,
+    });
+
+    res.status(200).json({ status: "Pesan diproses" });
   } catch (err) {
-    console.error("Gagal mengirim balasan:", err.message);
-    res.sendStatus(500);
+    console.error("Gagal memproses pesan:", err.message);
+    res.status(500).json({ error: "Terjadi kesalahan saat memproses pesan" });
   }
 });
 
+// Jalankan server
 app.listen(PORT, () => {
   console.log(`Bot WhatsApp aktif di http://localhost:${PORT}`);
 });
