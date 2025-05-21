@@ -1,33 +1,49 @@
-const venom = require('venom-bot');
-const axios = require('axios');
+import express from "express";
+import axios from "axios";
 
-venom
-  .create({
-    session: 'session-name',
-    multidevice: true
-  })
-  .then(client => start(client))
-  .catch(err => console.error(err));
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-function start(client) {
-  console.log('✅ Bot WhatsApp aktif');
+app.use(express.json());
 
-  client.onMessage(async message => {
-    const nomor = message.from;
-    const pesan = message.body;
+app.post("/webhook", async (req, res) => {
+  const data = req.body;
 
-    if (message.isGroupMsg === false) {
-      try {
-        await axios.get('https://botwa.appsbee.my.id/auto_reply.php', {
-          params: {
-            nomor,
-            pesan
-          }
-        });
-        console.log(`✅ Auto-reply terkirim ke ${nomor}`);
-      } catch (err) {
-        console.error(`❌ Gagal reply ke ${nomor}:`, err.message);
+  if (!data || !data.sender || !data.message) {
+    return res.status(400).json({ error: "Data tidak lengkap" });
+  }
+
+  const phoneNumber = data.sender;
+  const message = data.message;
+
+  console.log(`Pesan diterima dari ${phoneNumber}: ${message}`);
+
+  // Pesan balasan
+  const reply = `Halo! Kami menerima pesan Anda: "${message}"`;
+
+  try {
+    await axios.post(
+      "https://wapi.appsbee.my.id/send-message",
+      {
+        phoneNumber,
+        message: reply,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": "91e37fbd895dedf2587d3f506ce1718e", // disesuaikan
+        },
       }
-    }
-  });
-}
+    );
+
+    console.log(`Balasan dikirim ke ${phoneNumber}`);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Gagal mengirim balasan:", err.message);
+    res.sendStatus(500);
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Bot WhatsApp aktif di http://localhost:${PORT}`);
+});

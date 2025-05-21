@@ -1,12 +1,13 @@
 {
-  "name": "botwa-venom",
+  "name": "bot-whatsapp-api",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
+  "type": "module",
   "dependencies": {
     "axios": "^1.9.0",
-    "venom-bot": "^5.0.0"
+    "express": "^5.1.0"
   }
 }
