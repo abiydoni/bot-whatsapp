@@ -1,36 +1,33 @@
 import express from "express";
-import fetch from "node-fetch";
+import bodyParser from "body-parser";
+import axios from "axios";
 
 const app = express();
-const PORT = 3000;
+const port = 3000;
 
-app.use(express.json());
+app.use(bodyParser.json());
 
 app.post("/webhook", async (req, res) => {
+  const { from, message } = req.body;
+
+  console.log(`Pesan masuk dari ${from}: ${message}`);
+
+  // Jawaban otomatis (bisa pakai AI/logika lain di sini)
+  const reply = "Halo! Ini balasan otomatis dari bot.";
+
+  // Kirim ke wapi.appsbee.my.id/send-message via PHP (sender.php)
   try {
-    const { from, message } = req.body;
-
-    console.log(`Pesan diterima dari ${from}: ${message}`);
-
-    const response = await fetch("https://wapi.appsbee.my.id/send-message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone: from,
-        message: `Pesan Anda sudah kami terima: ${message}`,
-      }),
+    await axios.post("https://botwa.appsbee.my.id/sender.php", {
+      to: from,
+      message: reply,
     });
-
-    const data = await response.json();
-    console.log("Response dari API:", data);
-
-    res.status(200).json({ status: "Pesan diproses" });
+    res.send("OK");
   } catch (err) {
-    console.error("Gagal memproses pesan:", err.message);
-    res.status(500).json({ error: "Terjadi kesalahan saat memproses pesan" });
+    console.error("Gagal mengirim balasan:", err.message);
+    res.status(500).send("Gagal");
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Bot WhatsApp aktif di http://localhost:${PORT}`);
+app.listen(port, () => {
+  console.log(`Bot WhatsApp aktif di http://localhost:${port}`);
 });
