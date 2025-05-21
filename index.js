@@ -1,24 +1,28 @@
 import express from "express";
-import axios from "axios";
+import fetch from "node-fetch";
 
 const app = express();
 const PORT = 3000;
 
-// Middleware untuk parsing JSON
 app.use(express.json());
 
-// Endpoint untuk menerima pesan masuk dari webhook
 app.post("/webhook", async (req, res) => {
   try {
     const { from, message } = req.body;
 
     console.log(`Pesan diterima dari ${from}: ${message}`);
 
-    // Kirim balasan melalui API eksternal
-    await axios.post("https://wapi.appsbee.my.id/send-message", {
-      phone: from,
-      message: `Pesan Anda sudah kami terima: ${message}`,
+    const response = await fetch("https://wapi.appsbee.my.id/send-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: from,
+        message: `Pesan Anda sudah kami terima: ${message}`,
+      }),
     });
+
+    const data = await response.json();
+    console.log("Response dari API:", data);
 
     res.status(200).json({ status: "Pesan diproses" });
   } catch (err) {
@@ -27,7 +31,6 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// Jalankan server
 app.listen(PORT, () => {
   console.log(`Bot WhatsApp aktif di http://localhost:${PORT}`);
 });
