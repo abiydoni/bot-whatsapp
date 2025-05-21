@@ -1,13 +1,14 @@
 {
-  "name": "bot-whatsapp-api",
+  "name": "botwa-modular",
   "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
+  "main": "app.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node index.js"
+    "start": "node app.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "node-fetch": "^3.3.2"
+    "axios": "^1.5.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2"
   }
 }
