@@ -1,34 +1,33 @@
-const { Client } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
-const axios = require("axios");
+const venom = require('venom-bot');
+const axios = require('axios');
 
-const client = new Client();
+venom
+  .create({
+    session: 'session-name',
+    multidevice: true
+  })
+  .then(client => start(client))
+  .catch(err => console.error(err));
 
-client.on("qr", (qr) => {
-  console.log("📲 Scan QR berikut untuk login:");
-  qrcode.generate(qr, { small: true });
-});
+function start(client) {
+  console.log('✅ Bot WhatsApp aktif');
 
-client.on("ready", () => {
-  console.log("✅ Bot WhatsApp sudah siap dan online.");
-});
+  client.onMessage(async message => {
+    const nomor = message.from;
+    const pesan = message.body;
 
-client.on("message", async (msg) => {
-  const nomor = msg.from.split("@")[0];
-  const pesan = msg.body;
-
-  if (!pesan) return;
-
-  try {
-    // Kirim ke endpoint auto-reply PHP
-    await axios.get("https://botwa.appsbee.my.id/auto_reply.php", {
-      params: { nomor, pesan },
-    });
-
-    console.log(`✅ Auto-reply terkirim ke ${nomor} (pesan: ${pesan})`);
-  } catch (error) {
-    console.error(`❌ Gagal auto-reply ke ${nomor}:`, error.message);
-  }
-});
-
-client.initialize();
+    if (message.isGroupMsg === false) {
+      try {
+        await axios.get('https://botwa.appsbee.my.id/auto_reply.php', {
+          params: {
+            nomor,
+            pesan
+          }
+        });
+        console.log(`✅ Auto-reply terkirim ke ${nomor}`);
+      } catch (err) {
+        console.error(`❌ Gagal reply ke ${nomor}:`, err.message);
+      }
+    }
+  });
+}
