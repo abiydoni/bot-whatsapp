@@ -1,19 +1,27 @@
-require('dotenv').config();
-const axios = require('axios');
+import axios from "axios";
+import "dotenv/config";
 
-async function sendReply(phone, message, sessionId = process.env.DEFAULT_SESSION_ID) {
+export default async function sendReply(
+  phone,
+  message,
+  sessionId = process.env.DEFAULT_SESSION_ID
+) {
   const apiUrl = `${process.env.WAPI_DOMAIN}/send-message`;
 
   try {
-    const res = await axios.post(apiUrl, {
-      phoneNumber: phone,
-      message: message
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-session-id': sessionId
+    const res = await axios.post(
+      apiUrl,
+      {
+        phoneNumber: phone,
+        message: message,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": sessionId,
+        },
       }
-    });
+    );
 
     console.log(`✅ Balasan terkirim ke ${phone}`);
     return res.data;
@@ -22,5 +30,3 @@ async function sendReply(phone, message, sessionId = process.env.DEFAULT_SESSION
     return null;
   }
 }
-
-module.exports = sendReply;
