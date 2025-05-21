@@ -1,33 +1,32 @@
-import express from "express";
-import bodyParser from "body-parser";
-import axios from "axios";
-
+const express = require("express");
+const axios = require("axios");
+const bodyParser = require("body-parser");
 const app = express();
-const port = 3000;
+const PORT = 3000;
 
 app.use(bodyParser.json());
 
+// Webhook endpoint untuk terima pesan dari WAPI
 app.post("/webhook", async (req, res) => {
-  const { from, message } = req.body;
+  const message = req.body.message;
+  const sender = req.body.sender;
 
-  console.log(`Pesan masuk dari ${from}: ${message}`);
+  console.log(`Pesan diterima dari ${sender}: ${message}`);
 
-  // Jawaban otomatis (bisa pakai AI/logika lain di sini)
-  const reply = "Halo! Ini balasan otomatis dari bot.";
-
-  // Kirim ke wapi.appsbee.my.id/send-message via PHP (sender.php)
+  // Kirim balasan ke nomor pengirim
   try {
-    await axios.post("https://botwa.appsbee.my.id/sender.php", {
-      to: from,
-      message: reply,
+    await axios.post("https://wapi.appsbee.my.id/send-message", {
+      number: sender,
+      message: `Balasan otomatis: ${message}`,
     });
-    res.send("OK");
-  } catch (err) {
-    console.error("Gagal mengirim balasan:", err.message);
-    res.status(500).send("Gagal");
+    console.log("Balasan terkirim");
+  } catch (error) {
+    console.error("Gagal kirim balasan:", error.message);
   }
+
+  res.sendStatus(200);
 });
 
-app.listen(port, () => {
-  console.log(`Bot WhatsApp aktif di http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Bot WhatsApp aktif di http://localhost:${PORT}`);
 });
