@@ -1,10 +1,10 @@
 {
   "name": "whatsapp-gateway",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "index.js"
+    "start": "app.js"
   },
   "keywords": [],
   "author": "",
@@ -18,11 +18,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/abiydoni/wa.git"
+    "url": "git+https://github.com/abiydoni/bot-whatsapp.git"
   },
   "bugs": {
-    "url": "https://github.com/abiydoni/wa/issues"
+    "url": "https://github.com/abiydoni/bot-whatsapp/issues"
   },
-  "homepage": "https://github.com/abiydoni/wa#readme",
+  "homepage": "https://github.com/abiydoni/bot-whatsapp#readme",
   "description": ""
 }
