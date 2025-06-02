@@ -88,8 +88,8 @@ async function startSocket() {
     } else if (lowerText === "3") {
       reply = "🔗 Laporan Jimpitan akan dikirim melalui link API.";
     } else {
-      reply = "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.";
-      reply = "📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_";
+      reply =
+        "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_";
     }
 
     if (reply) {
