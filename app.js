@@ -88,17 +88,50 @@ async function startSocket() {
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
-        console.error("❌ Gagal ambil data KK:", error.message);
+        console.error(
+          "❌ Gagal ambil data KK:",
+          error.response?.status,
+          error.message
+        );
         await sock.sendMessage(sender, {
           text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
         });
       }
-      // Tidak perlu set reply lagi karena sudah mengirim pesan
       return;
     } else if (lowerText === "2") {
-      reply = "🔗 Daftar Jaga akan dikirim melalui link API.";
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/ambil_data_jaga.php"
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data KK:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+        });
+      }
+      return;
     } else if (lowerText === "3") {
-      reply = "🔗 Laporan Jimpitan akan dikirim melalui link API.";
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/ambil_data_jimpitan.php"
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data KK:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+        });
+      }
+      return;
     } else {
       reply =
         "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_";

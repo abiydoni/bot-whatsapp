@@ -56,11 +56,11 @@ $tahun = $kemarin->format('Y');
 
 $tanggalLengkap = "$hariInd, $tgl $bulanInd $tahun";
 
-// Bangun pesan WhatsApp / Telegram
-$pesan = "⏰ *Report Jimpitan Hari* $tanggalLengkap _(Semalam)_\n\n";
-$pesan .= "💰 Sebesar Rp. " . number_format($total_nominal, 0, ',', '.') . "\n\n";
-$pesan .= "📋 *Jimpitan yang kosong (kode KK) :*\n";
-$pesan .= "==========================\n";
+// Bangun text WhatsApp / Telegram
+$text = "⏰ *Report Jimpitan Hari* $tanggalLengkap _(Semalam)_\n\n";
+$text .= "💰 Sebesar Rp. " . number_format($total_nominal, 0, ',', '.') . "\n\n";
+$text .= "📋 *Jimpitan yang kosong (kode KK) :*\n";
+$text .= "==========================\n";
 
 if ($data) {
     $no = 1;
@@ -69,20 +69,20 @@ if ($data) {
 
             // $kk_name = $user['kk_name'];
             // $kk_anonim = strtoupper(substr($kk_name, 0, 1)) . '•••••' . strtolower(substr($kk_name, -1));
-            // $pesan .= $no++ . ". " . $user['code_id'] . " - " . $kk_anonim . "\n";
+            // $text .= $no++ . ". " . $user['code_id'] . " - " . $kk_anonim . "\n";
 
-            $pesan .= $no++ . ". " . $user['code_id'] . " - " . $user['kk_name'] . "\n";
+            $text .= $no++ . ". " . $user['code_id'] . " - " . $user['kk_name'] . "\n";
 
         }
     }
 
     if ($no === 1) {
-        $pesan .= "✅ Semua KK menyetor jimpitan.\n";
+        $text .= "✅ Semua KK menyetor jimpitan.\n";
     }
 } else {
-    $pesan .= "❌ Tidak ada data tersedia.\n";
+    $text .= "❌ Tidak ada data tersedia.\n";
 }
-$pesan .= "==========================\n";
+$text .= "==========================\n";
 // Tambahkan data petugas jimpitan (scan > 0) dari tabel report
 $stmt_petugas = $pdo->prepare("
     SELECT 
@@ -99,24 +99,24 @@ $stmt_petugas->execute();
 $data_petugas = $stmt_petugas->fetchAll(PDO::FETCH_ASSOC);
 
 if ($data_petugas) {
-    $pesan .= "👤 *Petugas Jimpitan :*\n";
+    $text .= "👤 *Petugas Jimpitan :*\n";
     $no_petugas = 1;
     foreach ($data_petugas as $petugas) {
-        $pesan .= $no_petugas . ". {$petugas['nama_u']} ({$petugas['jumlah_scan']} scan)\n";
+        $text .= $no_petugas . ". {$petugas['nama_u']} ({$petugas['jumlah_scan']} scan)\n";
         $no_petugas++;
     }
 } else {
-    $pesan .= "\n👤 Tidak ada data petugas jimpitan.\n";
+    $text .= "\n👤 Tidak ada data petugas jimpitan.\n";
 }
-$pesan .= "==========================\n";
-$pesan .= "*Info :*\n";
-$pesan .= "Mulai sekarang warga dapat mengakses aplikasi ini\n";
-$pesan .= "Silahkan klik disini : *https://rt07.appsbee.my.id*\n";
-$pesan .= "Gunakan User: warga dan Password: warga\n";
-$pesan .= "==========================\n";
+$text .= "==========================\n";
+$text .= "*Info :*\n";
+$text .= "Mulai sekarang warga dapat mengakses aplikasi ini\n";
+$text .= "Silahkan klik disini : *https://rt07.appsbee.my.id*\n";
+$text .= "Gunakan User: warga dan Password: warga\n";
+$text .= "==========================\n";
 // Tambahkan penutup
-$pesan .= "🌟 Terimakasih atas perhatiannya\n";
-$pesan .= "Info lebih lanjut bisa hubungi *ADMIN*\n\n";
-$pesan .= "_- Pesan Otomatis dari System -_";
-echo $pesan;
+$text .= "🌟 Terimakasih atas perhatiannya\n";
+$text .= "Info lebih lanjut bisa hubungi *ADMIN*\n\n";
+$text .= "_- Pesan Otomatis dari System -_";
+echo $text;
 ?>
