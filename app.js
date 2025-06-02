@@ -99,7 +99,7 @@ async function startSocket() {
     } else if (lowerText === "1") {
       try {
         const response = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_kk.php"
+          "https://botwa.appsbee.my.id/ambil_data_kk.php"
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
@@ -111,7 +111,7 @@ async function startSocket() {
     } else if (lowerText === "2") {
       try {
         const response = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_jaga.php"
+          "https://botwa.appsbee.my.id/ambil_data_jaga.php"
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
@@ -123,7 +123,7 @@ async function startSocket() {
     } else if (lowerText === "3") {
       try {
         const response = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_jimpitan.php"
+          "https://botwa.appsbee.my.id/ambil_data_jimpitan.php"
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
