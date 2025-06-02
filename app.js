@@ -1,6 +1,5 @@
 const express = require("express");
 const qrcode = require("qrcode");
-const axios = require("axios");
 const fs = require("fs");
 const {
   default: makeWASocket,
@@ -31,20 +30,6 @@ app.get("/status", (req, res) => {
 
   req.on("close", () => clearInterval(interval));
 });
-
-// Fungsi format nomor telepon
-function formatPhoneNumber(phoneNumber) {
-  if (phoneNumber.startsWith("0")) {
-    return "62" + phoneNumber.slice(1);
-  }
-  return phoneNumber;
-}
-
-// Simpan log ke file
-function logMessage(type, sender, message) {
-  const log = `[${new Date().toLocaleString()}] [${type}] ${sender}: ${message}\n`;
-  fs.appendFileSync("messages.log", log);
-}
 
 // Mulai koneksi WhatsApp
 async function startSocket() {
@@ -90,8 +75,6 @@ async function startSocket() {
     if (!text) return;
 
     console.log(`📩 Pesan dari ${sender}: ${text}`);
-    logMessage("IN", sender, text);
-
     const lowerText = text.toLowerCase();
     let reply = null;
 
@@ -99,39 +82,17 @@ async function startSocket() {
       reply =
         "Pilih informasi:\n1. Data KK\n2. Daftar Jaga\n3. Laporan Jimpitan";
     } else if (lowerText === "1") {
-      try {
-        const res = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_kk.php"
-        );
-        reply = res.data;
-      } catch (err) {
-        reply = "⚠️ Gagal mengambil data KK.";
-      }
+      reply = "🔗 Data KK akan dikirim melalui link API.";
     } else if (lowerText === "2") {
-      try {
-        const res = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_jaga.php"
-        );
-        reply = res.data;
-      } catch (err) {
-        reply = "⚠️ Gagal mengambil data jaga.";
-      }
+      reply = "🔗 Daftar Jaga akan dikirim melalui link API.";
     } else if (lowerText === "3") {
-      try {
-        const res = await axios.get(
-          "https://rt07.appsbee.my.id/api/ambil_jimpitan.php"
-        );
-        reply = res.data;
-      } catch (err) {
-        reply = "⚠️ Gagal mengambil data jimpitan.";
-      }
+      reply = "🔗 Laporan Jimpitan akan dikirim melalui link API.";
     } else {
       reply = "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.";
     }
 
     if (reply) {
       await sock.sendMessage(sender, { text: reply });
-      logMessage("OUT", sender, reply);
     }
   });
 }
@@ -144,38 +105,49 @@ app.get("/qr", (req, res) => {
         <h2>📱 WhatsApp Status</h2>
         <div id="status">Memuat status...</div>
         <div id="qr"></div>
-        <hr/>
+        <button onclick="unregister()">❌ Hapus QR & Sesi</button>
+        <script>
+          const statusDiv = document.getElementById('status');
+          const qrDiv = document.getElementById('qr');
+          const eventSource = new EventSource('/status');
+          eventSource.onmessage = e => {
+            statusDiv.innerHTML = e.data === 'connected' ? '✅ Terhubung' : '❌ Tidak terhubung';
+            if(e.data !== 'connected'){
+              fetch('/get-qr').then(r => r.text()).then(html => qrDiv.innerHTML = html);
+            } else {
+              qrDiv.innerHTML = '';
+            }
+          };
+          function unregister(){
+            fetch('/unregister', { method: 'POST' }).then(() => alert('✅ Sesi dihapus. Silakan refresh untuk scan ulang QR.'));
+          }
+        </script>
       </body>
     </html>
   `);
 });
 
-// Endpoint pairing code
-app.post("/pairing", async (req, res) => {
-  const { phoneNumber } = req.body;
-  if (!phoneNumber) return res.status(400).send("Nomor telepon harus diisi");
-  try {
-    const code = await sock.requestPairingCode(phoneNumber);
-    res.send({ code });
-  } catch (err) {
-    res.status(500).send("Gagal pairing: " + err.message);
+// Endpoint untuk menampilkan QR
+app.get("/get-qr", (req, res) => {
+  if (!qrData) {
+    res.send("Belum ada QR Code, tunggu sebentar...");
+  } else {
+    res.send(
+      `<img src="${qrData}" width="300" /><br/>Scan untuk login WhatsApp`
+    );
   }
 });
 
-// Endpoint kirim pesan
-app.post("/send-message", async (req, res) => {
-  let { phoneNumber, message } = req.body;
-  if (!phoneNumber || !message)
-    return res.status(400).send("Nomor & pesan harus diisi");
-  phoneNumber = formatPhoneNumber(phoneNumber);
+// Endpoint untuk hapus sesi (unregister)
+app.post("/unregister", async (req, res) => {
   try {
-    const sendResult = await sock.sendMessage(`${phoneNumber}@s.whatsapp.net`, {
-      text: message,
-    });
-    logMessage("OUT", phoneNumber, message);
-    res.send({ status: "success", message: "Terkirim", data: sendResult });
+    if (fs.existsSync("./auth")) {
+      fs.rmSync("./auth", { recursive: true, force: true });
+    }
+    res.send("Sesi WhatsApp berhasil dihapus");
+    process.exit(0); // Restart server agar sesi direset
   } catch (err) {
-    res.status(500).send("Gagal kirim: " + err.message);
+    res.status(500).send("Gagal hapus sesi: " + err.message);
   }
 });
 
@@ -184,6 +156,6 @@ app.get("/", (req, res) => {
   res.redirect("/qr");
 });
 
-// Mulai server & socket
+// Jalankan server & socket
 startSocket();
 app.listen(PORT, () => console.log(`🚀 Server di http://localhost:${PORT}`));
