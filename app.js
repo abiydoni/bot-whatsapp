@@ -145,30 +145,6 @@ app.get("/qr", (req, res) => {
         <div id="status">Memuat status...</div>
         <div id="qr"></div>
         <hr/>
-        <h3>Kirim Pesan</h3>
-        <input id="phone" placeholder="Nomor HP" /><br/>
-        <textarea id="msg" placeholder="Pesan"></textarea><br/>
-        <button onclick="send()">Kirim</button>
-        <script>
-          const statusDiv = document.getElementById('status');
-          const qrDiv = document.getElementById('qr');
-          const eventSource = new EventSource('/status');
-          eventSource.onmessage = e => {
-            statusDiv.innerHTML = e.data === 'connected' ? '✅ Terhubung' : '❌ Tidak terhubung';
-            if(e.data !== 'connected'){
-              fetch('/qr').then(r => r.text()).then(html => qrDiv.innerHTML = html);
-            } else {
-              qrDiv.innerHTML = '';
-            }
-          };
-          function send(){
-            fetch('/send-message', {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({phoneNumber:document.getElementById('phone').value,message:document.getElementById('msg').value})
-            }).then(r=>r.text()).then(alert);
-          }
-        </script>
       </body>
     </html>
   `);
