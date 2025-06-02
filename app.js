@@ -18,7 +18,6 @@ let sock;
 let qrData = null;
 let isConnected = false;
 
-// SSE Status koneksi real-time
 app.get("/status", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -32,7 +31,6 @@ app.get("/status", (req, res) => {
   req.on("close", () => clearInterval(interval));
 });
 
-// Mulai koneksi WhatsApp
 async function startSocket() {
   const { state, saveCreds } = await useMultiFileAuthState("./auth");
   const { version } = await fetchLatestBaileysVersion();
@@ -78,80 +76,47 @@ async function startSocket() {
     console.log(`📩 Pesan dari ${sender}: ${text}`);
     const lowerText = text.toLowerCase();
 
-    const axios = require("axios"); // Tambahkan ini!
-    if (lowerText === "menu") {
+    try {
+      let parentKode = "0";
+      if (lowerText !== "menu") {
+        parentKode = lowerText; // Anggap input user sebagai kode menu (contoh: 2, 3, dst)
+      }
+
+      const response = await axios.get(
+        `http://botwa.appsbee.my.id/api/db.php?parent_kode=${parentKode}`
+      );
+      const menuData = response.data;
+
+      if (menuData.length === 0) {
+        // Tidak ada submenu, cek apakah ini kode dengan aksi khusus
+        const aksiResponse = await axios.get(
+          `http://botwa.appsbee.my.id/api/db.php?parent_kode=${parentKode}`
+        );
+        if (aksiResponse.data.length === 0) {
+          await sock.sendMessage(sender, {
+            text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
+          });
+        } else {
+          const aksi = aksiResponse.data[0].aksi;
+          await sock.sendMessage(sender, { text: aksi });
+        }
+      } else {
+        // Tampilkan submenu yang ditemukan
+        let menuText = "Pilih informasi yang anda inginkan:\n";
+        menuData.forEach((item, index) => {
+          menuText += `${item.kode}. ${item.nama}\n`;
+        });
+        await sock.sendMessage(sender, { text: menuText });
+      }
+    } catch (error) {
+      console.error("❌ Gagal mengambil data menu:", error.message);
       await sock.sendMessage(sender, {
-        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)",
-      });
-    } else if (lowerText === "1") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_kk.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data KK:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else if (lowerText === "2") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_jaga.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data jadwal jaga:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data jadwal jaga. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else if (lowerText === "3") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_jimpitan.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data laporan jimpitan:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else {
-      await sock.sendMessage(sender, {
-        text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
+        text: "⚠️ Gagal mengambil data menu. Coba lagi nanti ya.",
       });
     }
   });
 }
 
-// Endpoint QR & UI
 app.get("/qr", (req, res) => {
   res.send(`
     <html>
@@ -181,7 +146,6 @@ app.get("/qr", (req, res) => {
   `);
 });
 
-// Endpoint untuk menampilkan QR
 app.get("/get-qr", (req, res) => {
   if (!qrData) {
     res.send("Belum ada QR Code, tunggu sebentar...");
@@ -192,7 +156,6 @@ app.get("/get-qr", (req, res) => {
   }
 });
 
-// Endpoint untuk hapus sesi (unregister)
 app.post("/unregister", async (req, res) => {
   try {
     if (fs.existsSync("./auth")) {
@@ -205,11 +168,9 @@ app.post("/unregister", async (req, res) => {
   }
 });
 
-// Halaman utama
 app.get("/", (req, res) => {
   res.redirect("/qr");
 });
 
-// Jalankan server & socket
 startSocket();
 app.listen(PORT, () => console.log(`🚀 Server di http://localhost:${PORT}`));
