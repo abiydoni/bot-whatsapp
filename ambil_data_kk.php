@@ -5,10 +5,10 @@ header('Content-Type: text/plain');
 $stmt = $pdo->query("SELECT code_id, kk_name FROM master_kk ORDER BY kk_name ASC");
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$pesan = "📋 Data Kepala Keluarga Randuares RT.07 RW.01:\n";
+$text = "📋 Data Kepala Keluarga Randuares RT.07 RW.01:\n";
 $no = 1;
 foreach ($data as $row) {
-    $pesan .= $no++ . ". " . $row['code_id'] . " - " . $row['kk_name'] . "\n";
+    $text .= $no++ . ". " . $row['code_id'] . " - " . $row['kk_name'] . "\n";
 }
-echo $pesan;
+echo $text;
 ?>
