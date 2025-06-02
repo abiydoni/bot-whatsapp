@@ -1,6 +1,7 @@
 const express = require("express");
 const qrcode = require("qrcode");
 const fs = require("fs");
+const axios = require("axios");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -76,11 +77,11 @@ async function startSocket() {
 
     console.log(`📩 Pesan dari ${sender}: ${text}`);
     const lowerText = text.toLowerCase();
-    let reply = null;
 
     if (lowerText === "menu") {
-      reply =
-        "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)";
+      await sock.sendMessage(sender, {
+        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)",
+      });
     } else if (lowerText === "1") {
       try {
         const response = await axios.get(
@@ -97,7 +98,6 @@ async function startSocket() {
           text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
         });
       }
-      return;
     } else if (lowerText === "2") {
       try {
         const response = await axios.get(
@@ -106,15 +106,14 @@ async function startSocket() {
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
         console.error(
-          "❌ Gagal ambil data KK:",
+          "❌ Gagal ambil data jadwal jaga:",
           error.response?.status,
           error.message
         );
         await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+          text: "⚠️ Gagal mengambil data jadwal jaga. Coba lagi nanti ya.",
         });
       }
-      return;
     } else if (lowerText === "3") {
       try {
         const response = await axios.get(
@@ -123,22 +122,18 @@ async function startSocket() {
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
         console.error(
-          "❌ Gagal ambil data KK:",
+          "❌ Gagal ambil data laporan jimpitan:",
           error.response?.status,
           error.message
         );
         await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
         });
       }
-      return;
     } else {
-      reply =
-        "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_";
-    }
-
-    if (reply) {
-      await sock.sendMessage(sender, { text: reply });
+      await sock.sendMessage(sender, {
+        text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
+      });
     }
   });
 }
@@ -191,7 +186,7 @@ app.post("/unregister", async (req, res) => {
       fs.rmSync("./auth", { recursive: true, force: true });
     }
     res.send("Sesi WhatsApp berhasil dihapus");
-    process.exit(0); // Restart server agar sesi direset
+    process.exit(0);
   } catch (err) {
     res.status(500).send("Gagal hapus sesi: " + err.message);
   }
