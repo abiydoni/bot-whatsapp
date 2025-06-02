@@ -80,9 +80,21 @@ async function startSocket() {
 
     if (lowerText === "menu") {
       reply =
-        "Pilih informasi:\n1. Data KK\n2. Daftar Jaga\n3. Laporan Jimpitan";
+        "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)";
     } else if (lowerText === "1") {
-      reply = "🔗 Data KK akan dikirim melalui link API.";
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/ambil_data_kk.php"
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error("❌ Gagal ambil data KK:", error.message);
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+        });
+      }
+      // Tidak perlu set reply lagi karena sudah mengirim pesan
+      return;
     } else if (lowerText === "2") {
       reply = "🔗 Daftar Jaga akan dikirim melalui link API.";
     } else if (lowerText === "3") {
