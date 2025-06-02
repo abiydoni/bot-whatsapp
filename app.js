@@ -78,6 +78,7 @@ async function startSocket() {
     console.log(`📩 Pesan dari ${sender}: ${text}`);
     const lowerText = text.toLowerCase();
 
+    const axios = require("axios"); // Tambahkan ini!
     if (lowerText === "menu") {
       await sock.sendMessage(sender, {
         text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)",
@@ -85,7 +86,10 @@ async function startSocket() {
     } else if (lowerText === "1") {
       try {
         const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_kk.php"
+          "http://botwa.appsbee.my.id/ambil_data_kk.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
@@ -98,10 +102,14 @@ async function startSocket() {
           text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
         });
       }
+      return;
     } else if (lowerText === "2") {
       try {
         const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_jaga.php"
+          "http://botwa.appsbee.my.id/ambil_data_jaga.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
@@ -114,10 +122,14 @@ async function startSocket() {
           text: "⚠️ Gagal mengambil data jadwal jaga. Coba lagi nanti ya.",
         });
       }
+      return;
     } else if (lowerText === "3") {
       try {
         const response = await axios.get(
-          "http://botwa.appsbee.my.id/ambil_data_jimpitan.php"
+          "http://botwa.appsbee.my.id/ambil_data_jimpitan.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
         );
         await sock.sendMessage(sender, { text: response.data });
       } catch (error) {
@@ -130,6 +142,7 @@ async function startSocket() {
           text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
         });
       }
+      return;
     } else {
       await sock.sendMessage(sender, {
         text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
