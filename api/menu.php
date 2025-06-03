@@ -41,7 +41,7 @@ if ($currentMenu) {
         if ($data !== false) {
             echo $data;
         } else {
-            echo "⚠️ Gagal mengambil data dari sumber.";
+            echo "⚠️ Gagal mengambil data dari sumber _(masih dalam pengembangan system)_.";
         }
         exit;
     }
