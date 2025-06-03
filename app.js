@@ -82,7 +82,11 @@ async function startSocket() {
     const axios = require("axios"); // Tambahkan ini!
     if (lowerText === "menu") {
       await sock.sendMessage(sender, {
-        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)",
+        text: "Pilih informasi:\n
+        1. Data KK\n
+        2. Jadwal Jaga Hari Ini\n
+        4. Jadwal jaga semua tanggal\n
+        3. Laporan Jimpitan (Kemarin)",
       });
     } else if (lowerText === "1") {
       try {
@@ -125,6 +129,26 @@ async function startSocket() {
       }
       return;
     } else if (lowerText === "3") {
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/api/ambil_data_jaga_semua.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data laporan jimpitan:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
+        });
+      }
+      return;
+    } else if (lowerText === "4") {
       try {
         const response = await axios.get(
           "http://botwa.appsbee.my.id/api/ambil_data_jimpitan.php",
