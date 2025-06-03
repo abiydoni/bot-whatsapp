@@ -25,40 +25,31 @@ if ($key === 'menu') {
     exit;
 }
 
-// Cek apakah input cocok dengan menu utama
-$parentMenu = null;
+// Cari menu (utama atau sub) berdasarkan keyword
+$currentMenu = null;
 foreach ($menus as $m) {
-    if ($m['parent_id'] == null && strtolower($m['keyword']) == $key) {
-        $parentMenu = $m;
+    if (strtolower($m['keyword']) == $key) {
+        $currentMenu = $m;
         break;
     }
 }
 
-if ($parentMenu) {
-    // Tampilkan submenu dari menu utama tersebut
-    echo "📂 *{$parentMenu['description']}*\nPilih sub-menu:\n" . getMenuText($menus, $parentMenu['id']);
-    exit;
-}
-
-// Jika cocok dengan submenu
-$sub = null;
-foreach ($menus as $m) {
-    if ($m['parent_id'] != null && strtolower($m['keyword']) == $key) {
-        $sub = $m;
-        break;
+if ($currentMenu) {
+    // ✅ Jika ada URL, tampilkan isi URL
+    if (!empty($currentMenu['url'])) {
+        $data = @file_get_contents($currentMenu['url']);
+        if ($data !== false) {
+            echo $data;
+        } else {
+            echo "⚠️ Gagal mengambil data dari sumber.";
+        }
+        exit;
     }
-}
 
-if ($sub && $sub['url']) {
-    // Redirect ke URL submenu (ambil isi dari URL)
-    $data = @file_get_contents($sub['url']);
-    if ($data !== false) {
-        echo $data;
-    } else {
-        echo "⚠️ Gagal mengambil data dari sumber.";
-    }
+    // ✅ Jika tidak ada URL, berarti tampilkan submenu-nya
+    echo "📂 *{$currentMenu['description']}*\nPilih sub-menu:\n" . getMenuText($menus, $currentMenu['id']);
     exit;
 }
 
 // Jika tidak cocok apapun
-echo "ℹ️ Pesena anda sudah kami terima. Ketik *menu* untuk pilihan informasi.";
+echo "ℹ️ Pesan anda sudah kami terima. Ketik *menu* untuk pilihan informasi.";
