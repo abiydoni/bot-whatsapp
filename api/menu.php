@@ -61,4 +61,4 @@ if ($sub && $sub['url']) {
 }
 
 // Jika tidak cocok apapun
-echo "ℹ️ Masukkan tidak dikenali. Ketik *menu* untuk pilihan.";
+echo "ℹ️ Pesena anda sudah kami terima. Ketik *menu* untuk pilihan informasi.";
