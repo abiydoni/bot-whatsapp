@@ -81,27 +81,25 @@ async function startSocket() {
     const lowerText = text.toLowerCase().trim();
 
     // Logika Menu Dinamis ===================================================
-    if (lowerText === "0") {
-      try {
-        const response = await axios.get(
-          `http://botwa.appsbee.my.id/api/menu.php?key=${encodeURIComponent(
-            lowerText
-          )}`,
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan (jaga-jaga)
-          }
-        );
-        const reply = response.data.trim();
+    try {
+      const response = await axios.get(
+        `http://botwa.appsbee.my.id/api/menu.php?key=${encodeURIComponent(
+          lowerText
+        )}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan (jaga-jaga)
+        }
+      );
+      const reply = response.data.trim();
 
-        await sock.sendMessage(sender, {
-          text: reply,
-        });
-      } catch (error) {
-        console.error("❌ Gagal akses menu.php:", error.message);
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data menu. Coba lagi nanti ya.",
-        });
-      }
+      await sock.sendMessage(sender, {
+        text: reply,
+      });
+    } catch (error) {
+      console.error("❌ Gagal akses menu.php:", error.message);
+      await sock.sendMessage(sender, {
+        text: "⚠️ Gagal mengambil data menu. Coba lagi nanti ya.",
+      });
     }
     // ========================================================================
   });
