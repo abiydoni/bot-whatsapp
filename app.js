@@ -48,6 +48,7 @@ async function startSocket() {
         console.log("QR Code diterima");
         isConnected = false;
       }
+
       if (connection === "close") {
         const shouldReconnect =
           lastDisconnect?.error instanceof Boom &&
@@ -64,13 +65,44 @@ async function startSocket() {
       }
     }
   );
-  // Panggil menu di tabel tb_botmenu
-  const response = await axios.get(
-    `http://botwa.appsbee.my.id/api/menu.php?key=${encodeURIComponent(
-      lowerText
-    )}`
-  );
-  await sock.sendMessage(sender, { text: response.data });
+
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
+    if (!messages || type !== "notify") return;
+
+    const msg = messages[0];
+    const sender = msg.key.remoteJid;
+    if (sender.endsWith("@g.us")) return;
+
+    const text =
+      msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+    if (!text) return;
+
+    console.log(`📩 Pesan dari ${sender}: ${text}`);
+    const lowerText = text.toLowerCase().trim();
+
+    // Logika Menu Dinamis ===================================================
+    try {
+      const response = await axios.get(
+        `http://botwa.appsbee.my.id/api/menu.php?key=${encodeURIComponent(
+          lowerText
+        )}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan (jaga-jaga)
+        }
+      );
+      const reply = response.data.trim();
+
+      await sock.sendMessage(sender, {
+        text: reply,
+      });
+    } catch (error) {
+      console.error("❌ Gagal akses menu.php:", error.message);
+      await sock.sendMessage(sender, {
+        text: "⚠️ Gagal mengambil data menu. Coba lagi nanti ya.",
+      });
+    }
+    // ========================================================================
+  });
 }
 
 // Endpoint QR & UI
@@ -134,4 +166,6 @@ app.get("/", (req, res) => {
 
 // Jalankan server & socket
 startSocket();
-app.listen(PORT, () => console.log(`🚀 Server di http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server berjalan di http://localhost:${PORT}`)
+);
