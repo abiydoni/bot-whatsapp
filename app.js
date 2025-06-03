@@ -64,113 +64,13 @@ async function startSocket() {
       }
     }
   );
-
-  sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    if (!messages || type !== "notify") return;
-    const msg = messages[0];
-    const sender = msg.key.remoteJid;
-    if (sender.endsWith("@g.us")) return;
-
-    const text =
-      msg.message?.conversation || msg.message?.extendedTextMessage?.text;
-    if (!text) return;
-
-    console.log(`📩 Pesan dari ${sender}: ${text}`);
-    const lowerText = text.toLowerCase();
-
-    // Batas menu ========================================================
-    const axios = require("axios"); // Tambahkan ini!
-    if (lowerText === "menu") {
-      await sock.sendMessage(sender, {
-        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n4. Jadwal jaga semua tanggal\n3. Laporan Jimpitan (Kemarin)",
-      });
-    } else if (lowerText === "1") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/api/ambil_data_kk.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data KK:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else if (lowerText === "2") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/api/ambil_data_jaga.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data jadwal jaga:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data jadwal jaga. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else if (lowerText === "3") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/api/ambil_data_jaga_semua.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data laporan jimpitan:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else if (lowerText === "4") {
-      try {
-        const response = await axios.get(
-          "http://botwa.appsbee.my.id/api/ambil_data_jimpitan.php",
-          {
-            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
-          }
-        );
-        await sock.sendMessage(sender, { text: response.data });
-      } catch (error) {
-        console.error(
-          "❌ Gagal ambil data laporan jimpitan:",
-          error.response?.status,
-          error.message
-        );
-        await sock.sendMessage(sender, {
-          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
-        });
-      }
-      return;
-    } else {
-      await sock.sendMessage(sender, {
-        text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
-      });
-    }
-    // Batas menu ========================================================
-  });
+  // Panggil menu di tabel tb_botmenu
+  const response = await axios.get(
+    `http://botwa.appsbee.my.id/api/menu.php?key=${encodeURIComponent(
+      lowerText
+    )}`
+  );
+  await sock.sendMessage(sender, { text: response.data });
 }
 
 // Endpoint QR & UI
