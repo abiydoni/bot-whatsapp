@@ -82,11 +82,7 @@ async function startSocket() {
     const axios = require("axios"); // Tambahkan ini!
     if (lowerText === "menu") {
       await sock.sendMessage(sender, {
-        text: "Pilih informasi:\n
-        1. Data KK\n
-        2. Jadwal Jaga Hari Ini\n
-        4. Jadwal jaga semua tanggal\n
-        3. Laporan Jimpitan (Kemarin)",
+        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n4. Jadwal jaga semua tanggal\n3. Laporan Jimpitan (Kemarin)",
       });
     } else if (lowerText === "1") {
       try {
