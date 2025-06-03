@@ -148,6 +148,76 @@ async function startSocket() {
         text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
       });
     }
+
+    if (lowerText === "info") {
+      await sock.sendMessage(sender, {
+        text: "Pilih informasi:\n1. Data KK\n2. Jadwal Jaga Hari Ini\n3. Laporan Jimpitan (Kemarin)",
+      });
+    } else if (lowerText === "1") {
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/api/ambil_data_kk.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data KK:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data kepala keluarga. Coba lagi nanti ya.",
+        });
+      }
+      return;
+    } else if (lowerText === "2") {
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/api/ambil_data_jaga.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data jadwal jaga:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data jadwal jaga. Coba lagi nanti ya.",
+        });
+      }
+      return;
+    } else if (lowerText === "3") {
+      try {
+        const response = await axios.get(
+          "http://botwa.appsbee.my.id/api/ambil_data_jimpitan.php",
+          {
+            headers: { "User-Agent": "Mozilla/5.0" }, // Tambahan header (opsional)
+          }
+        );
+        await sock.sendMessage(sender, { text: response.data });
+      } catch (error) {
+        console.error(
+          "❌ Gagal ambil data laporan jimpitan:",
+          error.response?.status,
+          error.message
+        );
+        await sock.sendMessage(sender, {
+          text: "⚠️ Gagal mengambil data laporan jimpitan. Coba lagi nanti ya.",
+        });
+      }
+      return;
+    } else {
+      await sock.sendMessage(sender, {
+        text: "✅ Pesan Anda sudah diterima, kami akan membalas secepatnya.\n📩 _Ketik_ *menu* _untuk masuk pilihan informasi!_",
+      });
+    }
   });
 }
 
