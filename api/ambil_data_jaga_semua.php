@@ -27,7 +27,7 @@ $stmt->execute(['hari' => $hari]);
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Susun pesan
-$text = "⏰ *Jadwal Jaga Hari $hariInd*\n$tanggal $bulanInd $tahun\n\n";
+$text = "⏰ *Jadwal Jaga Hari $hariInd*\n\n";
 if ($users) {
     $no = 1;
     foreach ($users as $user) {
