@@ -21,7 +21,7 @@ function getMenuText($menus, $parentId = null) {
 
 // Jika permintaan adalah "menu", kirim daftar menu utama
 if ($key === 'menu') {
-    echo "📋 Pilih menu utama:\n" . getMenuText($menus, null);
+    echo "📋 Silahkan pilih informasi yang anda inginkan!\n" . getMenuText($menus, null);
     exit;
 }
 
@@ -47,9 +47,9 @@ if ($currentMenu) {
     }
 
     // ✅ Jika tidak ada URL, berarti tampilkan submenu-nya
-    echo "📂 *{$currentMenu['description']}*\nPilih sub-menu:\n" . getMenuText($menus, $currentMenu['id']);
+    echo "📂 *{$currentMenu['description']}*\nSilahkan pilih informasi yang anda inginkan!\n" . getMenuText($menus, $currentMenu['id']);
     exit;
 }
 
 // Jika tidak cocok apapun
-echo "ℹ️ Pesan anda sudah kami terima. Ketik *menu* untuk pilihan informasi.";
+echo "ℹ️ Terima kasih, Pesan anda sudah kami terima.\nKetik *menu* untuk pilihan informasi.";
