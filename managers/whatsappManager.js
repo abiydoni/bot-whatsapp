@@ -425,24 +425,52 @@ class WhatsAppManager {
     sock.ev.on("messages.upsert", async ({ messages, type }) => {
       clientData.lastActivity = new Date();
 
+      // Debug logging untuk memastikan event handler terpanggil
+      this.logger.info(
+        `🔍 Bot Debug: messages.upsert event triggered - type: ${type}, messages count: ${
+          messages?.length || 0
+        }`
+      );
+
       // Bot Auto-Reply Logic
-      if (!botConfig.bot.enabled) return;
-      if (!messages || type !== "notify") return;
+      if (!botConfig.bot.enabled) {
+        this.logger.info(`🔍 Bot Debug: Bot is disabled in config`);
+        return;
+      }
+
+      if (!messages || type !== "notify") {
+        this.logger.info(
+          `🔍 Bot Debug: Skipping - no messages or type not notify`
+        );
+        return;
+      }
 
       const msg = messages[0];
       const sender = msg.key.remoteJid;
 
+      this.logger.info(`🔍 Bot Debug: Processing message from ${sender}`);
+
       // Skip group messages if configured
-      if (botConfig.bot.skipGroupMessages && sender.endsWith("@g.us")) return;
+      if (botConfig.bot.skipGroupMessages && sender.endsWith("@g.us")) {
+        this.logger.info(`🔍 Bot Debug: Skipping group message from ${sender}`);
+        return;
+      }
 
       const text =
         msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+
+      this.logger.info(`🔍 Bot Debug: Message text: "${text}"`);
+
       if (
         !text ||
         text.length < botConfig.message.minLength ||
         text.length > botConfig.message.maxLength
-      )
+      ) {
+        this.logger.info(
+          `🔍 Bot Debug: Skipping - invalid text length or empty`
+        );
         return;
+      }
 
       if (botConfig.message.logIncoming) {
         this.logger.info(
@@ -451,9 +479,14 @@ class WhatsAppManager {
       }
 
       const lowerText = text.toLowerCase().trim();
+      this.logger.info(`🔍 Bot Debug: Processing keyword: "${lowerText}"`);
 
       // Logika Menu Dinamis ===================================================
       try {
+        this.logger.info(
+          `🔍 Bot Debug: Making API call to ${botConfig.bot.apiUrl}`
+        );
+
         const response = await axios.get(
           `${botConfig.bot.apiUrl}?key=${encodeURIComponent(lowerText)}`,
           {
@@ -461,15 +494,26 @@ class WhatsAppManager {
             timeout: botConfig.bot.timeout,
           }
         );
+
+        this.logger.info(
+          `🔍 Bot Debug: API response received: ${response.data.substring(
+            0,
+            100
+          )}...`
+        );
+
         const reply = response.data.trim();
 
         if (reply && reply !== "") {
+          this.logger.info(`🔍 Bot Debug: Sending reply to ${sender}`);
           await sock.sendMessage(sender, {
             text: reply,
           });
           this.logger.info(
             `${botConfig.bot.logPrefix} Auto-reply sent to ${sender}`
           );
+        } else {
+          this.logger.info(`🔍 Bot Debug: Empty reply from API, not sending`);
         }
       } catch (error) {
         this.logger.error(
@@ -477,6 +521,7 @@ class WhatsAppManager {
           error.message
         );
         try {
+          this.logger.info(`🔍 Bot Debug: Sending error message to ${sender}`);
           await sock.sendMessage(sender, {
             text: botConfig.bot.errorMessage,
           });

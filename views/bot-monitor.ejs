@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Bot Monitor</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #333;
+      }
+      .status-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .status-connected {
+        background-color: #28a745;
+      }
+      .status-disconnected {
+        background-color: #dc3545;
+      }
+      .status-unknown {
+        background-color: #ffc107;
+      }
+
+      .bot-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-primary {
+        background-color: #007bff;
+        color: white;
+      }
+      .btn-success {
+        background-color: #28a745;
+        color: white;
+      }
+      .btn-danger {
+        background-color: #dc3545;
+        color: white;
+      }
+      .btn-warning {
+        background-color: #ffc107;
+        color: black;
+      }
+
+      .sessions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .session-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .test-api {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+      }
+      .test-api input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-right: 10px;
+        width: 200px;
+      }
+      .log-container {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .log-entry {
+        margin: 5px 0;
+        padding: 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .log-info {
+        background-color: #d1ecf1;
+      }
+      .log-error {
+        background-color: #f8d7da;
+      }
+      .log-success {
+        background-color: #d4edda;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🤖 WhatsApp Bot Monitor</h1>
+        <p>Monitor dan kontrol bot WhatsApp Anda</p>
+      </div>
+
+      <!-- Bot Status -->
+      <div class="status-card">
+        <h3>📊 Status Bot</h3>
+        <div id="botStatus">Loading...</div>
+      </div>
+
+      <!-- Bot Controls -->
+      <div class="status-card">
+        <h3>🎛️ Kontrol Bot</h3>
+        <div class="bot-controls">
+          <button class="btn btn-success" onclick="toggleBot(true)">
+            Enable Bot
+          </button>
+          <button class="btn btn-danger" onclick="toggleBot(false)">
+            Disable Bot
+          </button>
+          <button class="btn btn-warning" onclick="refreshStatus()">
+            Refresh Status
+          </button>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="status-card">
+        <h3>📱 Sessions WhatsApp</h3>
+        <div id="sessionsContainer">Loading sessions...</div>
+      </div>
+
+      <!-- Test API -->
+      <div class="test-api">
+        <h3>🧪 Test API Bot</h3>
+        <input
+          type="text"
+          id="testKeyword"
+          placeholder="Masukkan keyword untuk test..."
+          value="halo"
+        />
+        <button class="btn btn-primary" onclick="testAPI()">Test API</button>
+        <div id="apiResult" style="margin-top: 10px"></div>
+      </div>
+
+      <!-- Logs -->
+      <div class="log-container">
+        <h3>📝 Logs</h3>
+        <div id="logsContainer">
+          <p>Logs akan muncul di sini saat bot berjalan...</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Load initial status
+      document.addEventListener("DOMContentLoaded", function () {
+        refreshStatus();
+      });
+
+      async function refreshStatus() {
+        try {
+          const response = await fetch("/bot/status");
+          const data = await response.json();
+          displayBotStatus(data);
+          displaySessions(data.sessions);
+        } catch (error) {
+          console.error("Error fetching bot status:", error);
+          document.getElementById("botStatus").innerHTML =
+            '<p style="color: red;">Error loading status</p>';
+        }
+      }
+
+      function displayBotStatus(data) {
+        const statusHtml = `
+                <div>
+                    <p><strong>Bot Status:</strong> 
+                        <span class="status-indicator ${
+                          data.bot.enabled
+                            ? "status-connected"
+                            : "status-disconnected"
+                        }"></span>
+                        ${data.bot.enabled ? "Enabled" : "Disabled"}
+                    </p>
+                    <p><strong>API URL:</strong> ${data.bot.apiUrl}</p>
+                    <p><strong>Skip Group Messages:</strong> ${
+                      data.bot.skipGroupMessages ? "Yes" : "No"
+                    }</p>
+                    <p><strong>Total Sessions:</strong> ${
+                      data.totalSessions
+                    }</p>
+                    <p><strong>Connected Sessions:</strong> ${
+                      data.connectedSessions
+                    }</p>
+                </div>
+            `;
+        document.getElementById("botStatus").innerHTML = statusHtml;
+      }
+
+      function displaySessions(sessions) {
+        if (sessions.length === 0) {
+          document.getElementById("sessionsContainer").innerHTML =
+            "<p>No sessions found</p>";
+          return;
+        }
+
+        const sessionsHtml = `
+                <div class="sessions-grid">
+                    ${sessions
+                      .map(
+                        (session) => `
+                        <div class="session-card">
+                            <h4>Session: ${session.sessionId}</h4>
+                            <p><strong>Number:</strong> ${
+                              session.numberId || "N/A"
+                            }</p>
+                            <p><strong>Status:</strong> 
+                                <span class="status-indicator ${
+                                  session.isConnected
+                                    ? "status-connected"
+                                    : "status-disconnected"
+                                }"></span>
+                                ${
+                                  session.isConnected
+                                    ? "Connected"
+                                    : "Disconnected"
+                                }
+                            </p>
+                            <p><strong>Owner:</strong> ${
+                              session.owner || "N/A"
+                            }</p>
+                            <p><strong>Last Activity:</strong> ${
+                              session.lastActivity
+                                ? new Date(
+                                    session.lastActivity
+                                  ).toLocaleString()
+                                : "N/A"
+                            }</p>
+                        </div>
+                    `
+                      )
+                      .join("")}
+                </div>
+            `;
+        document.getElementById("sessionsContainer").innerHTML = sessionsHtml;
+      }
+
+      async function toggleBot(enabled) {
+        try {
+          const response = await fetch("/bot/toggle", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ enabled }),
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            alert(data.message);
+            refreshStatus();
+          } else {
+            alert("Error: " + data.error);
+          }
+        } catch (error) {
+          console.error("Error toggling bot:", error);
+          alert("Error toggling bot");
+        }
+      }
+
+      async function testAPI() {
+        const keyword = document.getElementById("testKeyword").value;
+        if (!keyword) {
+          alert("Please enter a keyword");
+          return;
+        }
+
+        try {
+          const response = await fetch("/bot/test-api", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keyword }),
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            document.getElementById("apiResult").innerHTML = `
+                        <div style="background: #d4edda; padding: 10px; border-radius: 5px;">
+                            <p><strong>Success!</strong></p>
+                            <p><strong>Keyword:</strong> ${data.keyword}</p>
+                            <p><strong>Response:</strong> ${data.response}</p>
+                            <p><strong>Status:</strong> ${data.status}</p>
+                        </div>
+                    `;
+          } else {
+            document.getElementById("apiResult").innerHTML = `
+                        <div style="background: #f8d7da; padding: 10px; border-radius: 5px;">
+                            <p><strong>Error:</strong> ${data.error}</p>
+                            <p><strong>Details:</strong> ${data.details}</p>
+                        </div>
+                    `;
+          }
+        } catch (error) {
+          console.error("Error testing API:", error);
+          document.getElementById("apiResult").innerHTML = `
+                    <div style="background: #f8d7da; padding: 10px; border-radius: 5px;">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+        }
+      }
+
+      // Auto refresh every 10 seconds
+      setInterval(refreshStatus, 10000);
+    </script>
+  </body>
+</html>
