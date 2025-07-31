@@ -10,68 +10,164 @@
   <body class="bg-[#fcf5eb] min-h-screen items-center justify-center">
     <%- include('partials/topnav', { user: user }) %>
     <main class="w-full mt-8 px-4 md:px-12 py-8">
-      <!-- 2x2 Grid Layout -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
-        <!-- Send Message Card (Top-Left) -->
-        <div
-          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
-        >
-          <div class="flex flex-col p-6 h-full">
-            <h2 class="text-lg font-semibold text-[#3be676]">Send Message</h2>
-            <label class="text-xs text-gray-600 mb-4">
-              Sender : <span class="text-xs font-bold"><%= numberId %></span>
-            </label>
-            <form id="sendForm" class="flex flex-col gap-3 mt-2">
-              <div class="flex items-center gap-4 mb-2">
-                <label class="text-gray-600">Send to</label>
-                <label class="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="sendType"
-                    id="sendTypeNumber"
-                    value="number"
-                    class="form-radio accent-gray-800"
-                    checked
-                  />
-                  <span class="ml-2 text-gray-700">Whatsapp Number</span>
-                </label>
-                <label class="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="sendType"
-                    id="sendTypeGroup"
-                    value="group"
-                    class="form-radio accent-gray-800"
-                  />
-                  <span class="ml-2 text-gray-700">Group</span>
-                </label>
-              </div>
-              <input
-                type="text"
-                id="phoneNumber"
-                placeholder="Recipient Number (e.g. 08xxxx or 628xxxx)"
-                required
-                class="border border-gray-800 rounded-full px-4 py-2 mb-4"
-              />
-              <div class="relative">
-                <textarea
-                  id="message"
-                  placeholder="Type your message..."
+      <!-- 3 Column Layout -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <!-- Column 1: Send Message + Bot Monitor -->
+        <div class="flex flex-col gap-6">
+          <!-- Send Message Card -->
+          <div
+            class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
+          >
+            <div class="flex flex-col p-6 h-full">
+              <h2 class="text-lg font-semibold text-[#3be676]">Send Message</h2>
+              <label class="text-xs text-gray-600 mb-4">
+                Sender : <span class="text-xs font-bold"><%= numberId %></span>
+              </label>
+              <form id="sendForm" class="flex flex-col gap-3 mt-2">
+                <div class="flex items-center gap-4 mb-2">
+                  <label class="text-gray-600">Send to</label>
+                  <label class="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="sendType"
+                      id="sendTypeNumber"
+                      value="number"
+                      class="form-radio accent-gray-800"
+                      checked
+                    />
+                    <span class="ml-2 text-gray-700">Whatsapp Number</span>
+                  </label>
+                  <label class="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="sendType"
+                      id="sendTypeGroup"
+                      value="group"
+                      class="form-radio accent-gray-800"
+                    />
+                    <span class="ml-2 text-gray-700">Group</span>
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  id="phoneNumber"
+                  placeholder="Recipient Number (e.g. 08xxxx or 628xxxx)"
                   required
-                  class="border border-gray-800 rounded-[25px] px-4 py-2 resize-y min-h-[120px] w-full pr-12"
-                ></textarea>
-                <button
-                  type="submit"
-                  class="absolute bottom-4 right-3 bg-white hover:bg-gray-50 text-gray-600 font-semibold py-2 px-4 rounded-full border border-gray-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                >
-                  <img src="icons/send-1.svg" alt="Send" class="w-6 h-6" />
-                </button>
+                  class="border border-gray-800 rounded-full px-4 py-2 mb-4"
+                />
+                <div class="relative">
+                  <textarea
+                    id="message"
+                    placeholder="Type your message..."
+                    required
+                    class="border border-gray-800 rounded-[25px] px-4 py-2 resize-y min-h-[120px] w-full pr-12"
+                  ></textarea>
+                  <button
+                    type="submit"
+                    class="absolute bottom-4 right-3 bg-white hover:bg-gray-50 text-gray-600 font-semibold py-2 px-4 rounded-full border border-gray-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                  >
+                    <img src="icons/send-1.svg" alt="Send" class="w-6 h-6" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Bot Monitor Card -->
+          <div
+            class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
+          >
+            <div class="flex flex-col p-6 h-full">
+              <h2 class="text-lg font-semibold text-[#3be676]">Bot Monitor</h2>
+              <label class="text-xs text-gray-600 mb-4">
+                Session :
+                <span class="text-xs font-bold"><%= sessionId %></span>
+              </label>
+
+              <!-- Bot Status -->
+              <div class="grid grid-cols-1 gap-3 mb-4">
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-2">
+                    <span
+                      id="botStatus"
+                      class="w-3 h-3 rounded-full bg-gray-400"
+                    ></span>
+                    <span class="font-medium text-sm">Bot Status</span>
+                  </div>
+                  <p id="botStatusText" class="text-xs text-gray-600 mt-1">
+                    Loading...
+                  </p>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    <span class="font-medium text-sm">API Status</span>
+                  </div>
+                  <p id="apiStatus" class="text-xs text-gray-600 mt-1">
+                    Loading...
+                  </p>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                    <span class="font-medium text-sm">Auto-Reply</span>
+                  </div>
+                  <p id="autoReplyStatus" class="text-xs text-gray-600 mt-1">
+                    Loading...
+                  </p>
+                </div>
               </div>
-            </form>
+
+              <!-- Bot Controls -->
+              <div class="flex gap-2 mb-4">
+                <button
+                  id="enableBot"
+                  onclick="toggleBot(true)"
+                  class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                >
+                  Enable
+                </button>
+                <button
+                  id="disableBot"
+                  onclick="toggleBot(false)"
+                  class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                >
+                  Disable
+                </button>
+                <a
+                  href="/bot-monitor"
+                  class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                >
+                  Full
+                </a>
+              </div>
+
+              <!-- API Testing -->
+              <div class="mt-auto">
+                <div class="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    id="testKeyword"
+                    placeholder="Test keyword..."
+                    value="halo"
+                    class="flex-1 border border-gray-300 rounded-full px-3 py-2 text-sm"
+                  />
+                  <button
+                    onclick="testAPI()"
+                    class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                  >
+                    Test
+                  </button>
+                </div>
+                <div id="apiResult" class="text-xs"></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Group List Card (Top-Right) -->
+        <!-- Column 2: Group List -->
         <div
           class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
         >
@@ -107,99 +203,7 @@
           </div>
         </div>
 
-        <!-- Bot Monitor Card (Bottom-Left) -->
-        <div
-          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
-        >
-          <div class="flex flex-col p-6 h-full">
-            <h2 class="text-lg font-semibold text-[#3be676]">Bot Monitor</h2>
-            <label class="text-xs text-gray-600 mb-4">
-              Session : <span class="text-xs font-bold"><%= sessionId %></span>
-            </label>
-
-            <!-- Bot Status -->
-            <div class="grid grid-cols-1 gap-3 mb-4">
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center gap-2">
-                  <span
-                    id="botStatus"
-                    class="w-3 h-3 rounded-full bg-gray-400"
-                  ></span>
-                  <span class="font-medium text-sm">Bot Status</span>
-                </div>
-                <p id="botStatusText" class="text-xs text-gray-600 mt-1">
-                  Loading...
-                </p>
-              </div>
-
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full bg-blue-500"></span>
-                  <span class="font-medium text-sm">API Status</span>
-                </div>
-                <p id="apiStatus" class="text-xs text-gray-600 mt-1">
-                  Loading...
-                </p>
-              </div>
-
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full bg-purple-500"></span>
-                  <span class="font-medium text-sm">Auto-Reply</span>
-                </div>
-                <p id="autoReplyStatus" class="text-xs text-gray-600 mt-1">
-                  Loading...
-                </p>
-              </div>
-            </div>
-
-            <!-- Bot Controls -->
-            <div class="flex gap-2 mb-4">
-              <button
-                id="enableBot"
-                onclick="toggleBot(true)"
-                class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-              >
-                Enable
-              </button>
-              <button
-                id="disableBot"
-                onclick="toggleBot(false)"
-                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-              >
-                Disable
-              </button>
-              <a
-                href="/bot-monitor"
-                class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-              >
-                Full
-              </a>
-            </div>
-
-            <!-- API Testing -->
-            <div class="mt-auto">
-              <div class="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  id="testKeyword"
-                  placeholder="Test keyword..."
-                  value="halo"
-                  class="flex-1 border border-gray-300 rounded-full px-3 py-2 text-sm"
-                />
-                <button
-                  onclick="testAPI()"
-                  class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-                >
-                  Test
-                </button>
-              </div>
-              <div id="apiResult" class="text-xs"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- API Documentation Card (Bottom-Right) -->
+        <!-- Column 3: API Documentation -->
         <div
           class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
         >
