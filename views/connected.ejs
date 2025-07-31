@@ -9,275 +9,289 @@
   </head>
   <body class="bg-[#fcf5eb] min-h-screen items-center justify-center">
     <%- include('partials/topnav', { user: user }) %>
-    <main
-      class="w-full flex flex-col md:flex-row gap-6 mt-8 px-4 md:px-12 py-8"
-    >
-      <!-- Send Message Card -->
-      <div
-        class="w-full md:w-1/3 max-w-xl bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800 flex-shrink-0"
-      >
-        <div class="flex flex-col p-6 h-full min-h-[400px]">
-          <h2 class="text-lg font-semibold text-[#3be676]">Send Message</h2>
-          <label class="text-xs text-gray-600 mb-4"
-            >Sender :
-            <span class="text-xs font-bold"><%= numberId %></span></label
-          >
-          <form id="sendForm" class="flex flex-col gap-3 mt-2">
-            <div class="flex items-center gap-4 mb-2">
-              <label class="text-gray-600">Send to</label>
-              <label class="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="sendType"
-                  id="sendTypeNumber"
-                  value="number"
-                  class="form-radio accent-gray-800"
-                  checked
-                />
-                <span class="ml-2 text-gray-700">Whatsapp Number</span>
-              </label>
-              <label class="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="sendType"
-                  id="sendTypeGroup"
-                  value="group"
-                  class="form-radio accent-gray-800"
-                />
-                <span class="ml-2 text-gray-700">Group</span>
-              </label>
-            </div>
-            <input
-              type="text"
-              id="phoneNumber"
-              placeholder="08xxxx or 628xxxx"
-              required
-              class="border border-gray-800 rounded-full px-4 py-2 mb-8"
-            />
-            <div class="relative">
-              <textarea
-                id="message"
-                placeholder="Type your message..."
-                required
-                class="border border-gray-800 rounded-[25px] px-4 py-2 resize-y min-h-[120px] w-full pr-32"
-              ></textarea>
-              <button
-                type="submit"
-                class="absolute bottom-4 right-3 bg-white hover:bg-gray-50 text-gray-600 font-semibold py-2 px-4 rounded-full border border-gray-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
-              >
-                <img
-                  src="icons/send-1.svg"
-                  alt="Send"
-                  class="w-6 h-6 text-white"
-                />
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Bot Monitor Card -->
-      <div
-        class="w-full md:w-1/3 max-w-xl bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800 flex-shrink-0"
-      >
-        <div class="flex flex-col p-6 h-full min-h-[400px]">
-          <h2 class="text-lg font-semibold text-[#3be676]">🤖 Bot Monitor</h2>
-          <label class="text-xs text-gray-600 mb-4"
-            >Session :
-            <span class="text-xs font-bold"><%= sessionId %></span></label
-          >
-
-          <!-- Bot Status -->
-          <div class="grid grid-cols-1 gap-3 mb-4">
-            <div class="bg-gray-50 rounded-lg p-3">
-              <div class="flex items-center gap-2">
-                <span
-                  id="botStatus"
-                  class="w-3 h-3 rounded-full bg-gray-400"
-                ></span>
-                <span class="font-medium text-sm">Bot Status</span>
+    <main class="w-full mt-8 px-4 md:px-12 py-8">
+      <!-- 2x2 Grid Layout -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+        <!-- Send Message Card (Top-Left) -->
+        <div
+          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
+        >
+          <div class="flex flex-col p-6 h-full">
+            <h2 class="text-lg font-semibold text-[#3be676]">Send Message</h2>
+            <label class="text-xs text-gray-600 mb-4">
+              Sender : <span class="text-xs font-bold"><%= numberId %></span>
+            </label>
+            <form id="sendForm" class="flex flex-col gap-3 mt-2">
+              <div class="flex items-center gap-4 mb-2">
+                <label class="text-gray-600">Send to</label>
+                <label class="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="sendType"
+                    id="sendTypeNumber"
+                    value="number"
+                    class="form-radio accent-gray-800"
+                    checked
+                  />
+                  <span class="ml-2 text-gray-700">Whatsapp Number</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="sendType"
+                    id="sendTypeGroup"
+                    value="group"
+                    class="form-radio accent-gray-800"
+                  />
+                  <span class="ml-2 text-gray-700">Group</span>
+                </label>
               </div>
-              <p id="botStatusText" class="text-xs text-gray-600 mt-1">
-                Loading...
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-lg p-3">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
-                <span class="font-medium text-sm">API Status</span>
-              </div>
-              <p id="apiStatus" class="text-xs text-gray-600 mt-1">
-                Loading...
-              </p>
-            </div>
-
-            <div class="bg-gray-50 rounded-lg p-3">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-purple-500"></span>
-                <span class="font-medium text-sm">Auto-Reply</span>
-              </div>
-              <p id="autoReplyStatus" class="text-xs text-gray-600 mt-1">
-                Loading...
-              </p>
-            </div>
-          </div>
-
-          <!-- Bot Controls -->
-          <div class="flex gap-2 mb-4">
-            <button
-              id="enableBot"
-              onclick="toggleBot(true)"
-              class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-            >
-              Enable
-            </button>
-            <button
-              id="disableBot"
-              onclick="toggleBot(false)"
-              class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-            >
-              Disable
-            </button>
-            <a
-              href="/bot-monitor"
-              class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
-            >
-              Full
-            </a>
-          </div>
-
-          <!-- API Testing -->
-          <div class="mt-auto">
-            <div class="flex gap-2 mb-2">
               <input
                 type="text"
-                id="testKeyword"
-                placeholder="Test keyword..."
-                value="halo"
-                class="flex-1 border border-gray-300 rounded-full px-3 py-2 text-sm"
+                id="phoneNumber"
+                placeholder="Recipient Number (e.g. 08xxxx or 628xxxx)"
+                required
+                class="border border-gray-800 rounded-full px-4 py-2 mb-4"
               />
+              <div class="relative">
+                <textarea
+                  id="message"
+                  placeholder="Type your message..."
+                  required
+                  class="border border-gray-800 rounded-[25px] px-4 py-2 resize-y min-h-[120px] w-full pr-12"
+                ></textarea>
+                <button
+                  type="submit"
+                  class="absolute bottom-4 right-3 bg-white hover:bg-gray-50 text-gray-600 font-semibold py-2 px-4 rounded-full border border-gray-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                >
+                  <img src="icons/send-1.svg" alt="Send" class="w-6 h-6" />
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Group List Card (Top-Right) -->
+        <div
+          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
+        >
+          <div class="flex flex-col p-6 h-full">
+            <h3 class="text-lg font-semibold text-[#3be676] mb-4">
+              Group List
+            </h3>
+            <div class="overflow-x-auto flex-1">
+              <table class="w-full text-sm" id="groupTable">
+                <thead>
+                  <tr class="bg-gray-200">
+                    <th class="py-2 px-2 text-left text-xs">Group Name</th>
+                    <th class="py-2 px-2 text-left text-xs">Group ID</th>
+                  </tr>
+                </thead>
+                <tbody id="groupList">
+                  <tr>
+                    <td
+                      colspan="2"
+                      class="text-center py-4 text-gray-400 text-xs"
+                    >
+                      Loading data...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="groupError" class="text-red-500 text-xs mt-2"></div>
+            <div
+              id="groupPagination"
+              class="flex justify-between items-center mt-4"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Bot Monitor Card (Bottom-Left) -->
+        <div
+          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
+        >
+          <div class="flex flex-col p-6 h-full">
+            <h2 class="text-lg font-semibold text-[#3be676]">Bot Monitor</h2>
+            <label class="text-xs text-gray-600 mb-4">
+              Session : <span class="text-xs font-bold"><%= sessionId %></span>
+            </label>
+
+            <!-- Bot Status -->
+            <div class="grid grid-cols-1 gap-3 mb-4">
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <span
+                    id="botStatus"
+                    class="w-3 h-3 rounded-full bg-gray-400"
+                  ></span>
+                  <span class="font-medium text-sm">Bot Status</span>
+                </div>
+                <p id="botStatusText" class="text-xs text-gray-600 mt-1">
+                  Loading...
+                </p>
+              </div>
+
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                  <span class="font-medium text-sm">API Status</span>
+                </div>
+                <p id="apiStatus" class="text-xs text-gray-600 mt-1">
+                  Loading...
+                </p>
+              </div>
+
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                  <span class="font-medium text-sm">Auto-Reply</span>
+                </div>
+                <p id="autoReplyStatus" class="text-xs text-gray-600 mt-1">
+                  Loading...
+                </p>
+              </div>
+            </div>
+
+            <!-- Bot Controls -->
+            <div class="flex gap-2 mb-4">
               <button
-                onclick="testAPI()"
-                class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                id="enableBot"
+                onclick="toggleBot(true)"
+                class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
               >
-                Test
+                Enable
               </button>
+              <button
+                id="disableBot"
+                onclick="toggleBot(false)"
+                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+              >
+                Disable
+              </button>
+              <a
+                href="/bot-monitor"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+              >
+                Full
+              </a>
             </div>
-            <div id="apiResult" class="text-xs"></div>
+
+            <!-- API Testing -->
+            <div class="mt-auto">
+              <div class="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  id="testKeyword"
+                  placeholder="Test keyword..."
+                  value="halo"
+                  class="flex-1 border border-gray-300 rounded-full px-3 py-2 text-sm"
+                />
+                <button
+                  onclick="testAPI()"
+                  class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-3 rounded-full transition-all text-sm"
+                >
+                  Test
+                </button>
+              </div>
+              <div id="apiResult" class="text-xs"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Group Table & API Docs Cards -->
-      <div class="w-full md:w-2/3 flex flex-col md:flex-row gap-6">
-        <!-- Group Table Card -->
+        <!-- API Documentation Card (Bottom-Right) -->
         <div
-          class="w-full md:w-1/2 max-w-xl bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800 p-8 flex flex-col h-full min-h-[550px]"
+          class="bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800"
         >
-          <h3 class="text-lg font-semibold text-[#3be676] mb-4">Group List</h3>
-          <div class="overflow-x-auto flex-1">
-            <table class="w-full text-sm" id="groupTable">
-              <thead>
-                <tr class="bg-gray-200 rouded-full">
-                  <th class="py-2 px-2 text-left">Group Name</th>
-                  <th class="py-2 px-2 text-left">Group ID</th>
-                </tr>
-              </thead>
-              <tbody id="groupList">
-                <tr>
-                  <td colspan="2" class="text-center py-4 text-gray-400">
-                    Loading data...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div id="groupError" class="text-red-500 text-sm mt-2"></div>
-          <div
-            id="groupPagination"
-            class="flex justify-between items-center mt-4"
-          ></div>
-        </div>
-
-        <!-- API Documentation Card -->
-        <div
-          class="w-full md:w-1/2 max-w-xl bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800 p-8 flex flex-col h-full"
-        >
-          <h3 class="text-lg font-semibold text-[#3be676] mb-4">
-            API Documentation
-          </h3>
-          <div class="mb-4">
-            <div class="font-semibold text-gray-800 mb-1">
-              Send Message to Number
-            </div>
-            <div class="text-xs text-gray-700 mb-1 flex items-center gap-2">
-              <span
-                class="font-mono bg-gray-100 px-2 py-1 cursor-pointer copy-doc"
-                data-copy="<%= baseUrl %>/send-message"
+          <div class="flex flex-col p-6 h-full">
+            <h3 class="text-lg font-semibold text-[#3be676] mb-4">
+              API Documentation
+            </h3>
+            <div class="mb-4">
+              <div class="font-semibold text-gray-800 mb-1 text-sm">
+                Send Message to Number
+              </div>
+              <div class="text-xs text-gray-700 mb-1 flex items-center gap-2">
+                <span
+                  class="font-mono bg-gray-100 px-2 py-1 cursor-pointer copy-doc"
+                  data-copy="<%= baseUrl %>/send-message"
+                  title="Click to copy"
+                >
+                  [POST] <%= baseUrl %>/send-message
+                </span>
+              </div>
+              <div class="text-xs text-gray-600 mb-1">Headers:</div>
+              <pre
+                class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1 cursor-pointer copy-session"
+                data-copy="<%= sessionId %>"
                 title="Click to copy"
               >
-                [POST] <%= baseUrl %>/send-message
-              </span>
-            </div>
-            <div class="text-xs text-gray-600 mb-1">Headers:</div>
-            <pre
-              class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1 cursor-pointer copy-session"
-              data-copy="<%= sessionId %>"
-              title="Click to copy"
-            >
-x-session-id: <%= sessionId %>
-          </pre
-            >
-            <div class="text-xs text-gray-600 mb-1">Body (JSON):</div>
-            <pre class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1">
+x-session-id: <%= sessionId %></pre
+              >
+              <div class="text-xs text-gray-600 mb-1">Body (JSON):</div>
+              <pre class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1">
 {
   "phoneNumber": "08xxxx or 628xxxx",
   "message": "Your message"
 }</pre
-            >
-          </div>
-          <div>
-            <div class="font-semibold text-gray-800 mb-1">
-              Send Message to Group
+              >
             </div>
-            <div class="text-xs text-gray-700 mb-1 flex items-center gap-2">
-              <span
-                class="font-mono bg-gray-100 px-2 py-1 cursor-pointer copy-doc"
-                data-copy="<%= baseUrl %>/send-group-message"
+            <div>
+              <div class="font-semibold text-gray-800 mb-1 text-sm">
+                Send Message to Group
+              </div>
+              <div class="text-xs text-gray-700 mb-1 flex items-center gap-2">
+                <span
+                  class="font-mono bg-gray-100 px-2 py-1 cursor-pointer copy-doc"
+                  data-copy="<%= baseUrl %>/send-group-message"
+                  title="Click to copy"
+                >
+                  [POST] <%= baseUrl %>/send-group-message
+                </span>
+              </div>
+              <div class="text-xs text-gray-600 mb-1">Headers:</div>
+              <pre
+                class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1 cursor-pointer copy-session"
+                data-copy="<%= sessionId %>"
                 title="Click to copy"
               >
-                [POST] <%= baseUrl %>/send-group-message
-              </span>
-            </div>
-            <div class="text-xs text-gray-600 mb-1">Headers:</div>
-            <pre
-              class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1 cursor-pointer copy-session"
-              data-copy="<%= sessionId %>"
-              title="Click to copy"
-            >
-x-session-id: <%= sessionId %>
-          </pre
-            >
-            <div class="text-xs text-gray-600 mb-1">Body (JSON):</div>
-            <pre class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1">
+x-session-id: <%= sessionId %></pre
+              >
+              <div class="text-xs text-gray-600 mb-1">Body (JSON):</div>
+              <pre class="bg-gray-100 px-3 py-2 text-xs text-gray-800 mb-1">
 {
   "groupId": "GroupId",
   "message": "Your message"
 }</pre
-            >
+              >
+            </div>
           </div>
         </div>
       </div>
     </main>
+
     <script>
+      // Toast notification function
+      function showTWToast({ type, message }) {
+        const toast = document.createElement("div");
+        toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white font-semibold ${
+          type === "success" ? "bg-green-500" : "bg-red-500"
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.remove();
+        }, 3000);
+      }
+
+      // Send Message Form
       document.getElementById("sendForm").onsubmit = async function (e) {
         e.preventDefault();
         const sendBtn = this.querySelector('button[type="submit"]');
         const originalBtnContent = sendBtn.innerHTML;
         sendBtn.disabled = true;
         sendBtn.innerHTML =
-          '<img src="icons/send-1.svg" alt="Send" class="w-6 h-6 text-white inline-block"> Sending...';
+          '<img src="icons/send-1.svg" alt="Send" class="w-6 h-6"> Sending...';
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -288,6 +302,7 @@ x-session-id: <%= sessionId %>
         const message = document.getElementById("message").value;
         let url = "/send-message";
         let body = {};
+
         if (type === "number") {
           url = "/send-message";
           body = { phoneNumber: recipient, message };
@@ -295,6 +310,7 @@ x-session-id: <%= sessionId %>
           url = "/send-group-message";
           body = { groupId: recipient, message };
         }
+
         try {
           const res = await fetch(url, {
             method: "POST",
@@ -324,6 +340,7 @@ x-session-id: <%= sessionId %>
         }
       };
 
+      // Group Management
       let allGroups = [];
       let currentPage = 1;
       const groupsPerPage = 10;
@@ -336,7 +353,7 @@ x-session-id: <%= sessionId %>
 
         if (allGroups.length === 0) {
           groupList.innerHTML =
-            '<tr><td colspan="2" class="text-center py-4 text-gray-400">No groups found.</td></tr>';
+            '<tr><td colspan="2" class="text-center py-4 text-gray-400 text-xs">No groups found.</td></tr>';
           return;
         }
 
@@ -430,9 +447,8 @@ x-session-id: <%= sessionId %>
           groupError.innerText = data.message || "Failed to fetch group list.";
         }
       }
-      fetchGroups();
 
-      const recipientLabel = document.getElementById("recipientLabel");
+      // Form field updates
       const phoneInput = document.getElementById("phoneNumber");
       const sendTypeNumber = document.getElementById("sendTypeNumber");
       const sendTypeGroup = document.getElementById("sendTypeGroup");
@@ -447,10 +463,7 @@ x-session-id: <%= sessionId %>
 
       sendTypeNumber.addEventListener("change", updateRecipientField);
       sendTypeGroup.addEventListener("change", updateRecipientField);
-
       updateRecipientField();
-
-      document.addEventListener("DOMContentLoaded", addCopyListeners);
 
       // Bot Monitor Functions
       async function loadBotStatus() {
@@ -458,7 +471,6 @@ x-session-id: <%= sessionId %>
           const response = await fetch("/bot/status");
           const data = await response.json();
 
-          // Update bot status
           const botStatus = document.getElementById("botStatus");
           const botStatusText = document.getElementById("botStatusText");
           const apiStatus = document.getElementById("apiStatus");
@@ -472,10 +484,8 @@ x-session-id: <%= sessionId %>
             botStatusText.textContent = "Disabled";
           }
 
-          // Update API status
           apiStatus.textContent = `Connected: ${data.connectedSessions}/${data.totalSessions}`;
 
-          // Update auto-reply status
           if (data.connectedSessions > 0 && data.bot.enabled) {
             autoReplyStatus.textContent = "Active";
           } else {
@@ -553,9 +563,13 @@ x-session-id: <%= sessionId %>
         }
       }
 
-      // Load bot status on page load
-      loadBotStatus();
-      setInterval(loadBotStatus, 5000);
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        addCopyListeners();
+        fetchGroups();
+        loadBotStatus();
+        setInterval(loadBotStatus, 5000);
+      });
     </script>
   </body>
 </html>
