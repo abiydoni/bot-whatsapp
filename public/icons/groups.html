@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daftar Grup WhatsApp</title>
+  <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
+<body>
+  <main>
+    <h2>Daftar Grup WhatsApp</h2>
+    <form id="form">
+      <label>Session ID:</label>
+      <input type="text" id="sessionId" required>
+      <button type="submit">Lihat Grup</button>
+    </form>
+    <ul id="groups"></ul>
+    <script>
+      // Ambil sessionId dari query string jika ada
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('sessionId');
+      if (sessionId) {
+        document.getElementById('sessionId').value = sessionId;
+      }
+
+      document.getElementById('form').onsubmit = async function(e) {
+        e.preventDefault();
+        const sessionId = document.getElementById('sessionId').value;
+        const res = await fetch('/groups?sessionId=' + sessionId, {
+          headers: { 'x-session-id': sessionId }
+        });
+        const data = await res.json();
+        const ul = document.getElementById('groups');
+        ul.innerHTML = '';
+        if (data.groups) {
+          data.groups.forEach(g => {
+            const li = document.createElement('li');
+            li.textContent = g.name + ' (' + g.id + ')';
+            ul.appendChild(li);
+          });
+        } else {
+          ul.innerHTML = '<li>Tidak ada grup atau session salah.</li>';
+        }
+      };
+
+      // Jika sessionId sudah ada, auto-submit form
+      if (sessionId) {
+        document.getElementById('form').dispatchEvent(new Event('submit'));
+      }
+    </script>
+    <a href="/">Kembali</a>
+  </main>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register - WhatsApp Gateway</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-[#fcf5eb] min-h-screen flex flex-col items-center justify-center">
+  <main class="w-full flex flex-col items-center justify-center">
+    <%- include('partials/topnav', { user: user }) %>
+    <div class="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-[25px] shadow-xl border border-gray-800 p-8">
+      <h2 class="text-2xl font-bold text-center text-[#3be676] mb-6">Create User</h2>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-center">
+          <%= error %>
+        </div>
+      <% } %>
+      <form action="/register" method="post" class="flex flex-col gap-4">
+        <div>
+          <label for="username" class="block text-gray-600 font-medium mb-1">Username</label>
+          <input type="text" id="username" name="username" required class="w-full border border-gray-800 rounded-full px-4 py-2" placeholder="Enter your username">
+        </div>
+        <div>
+          <label for="company" class="block text-gray-600 font-medium mb-1">Company</label>
+          <input type="text" id="company" name="company" required class="w-full border border-gray-800 rounded-full px-4 py-2" placeholder="Enter your company">
+        </div>
+        <div>
+          <label for="password" class="block text-gray-600 font-medium mb-1">Password</label>
+          <input type="password" id="password" name="password" required class="w-full border border-gray-800 rounded-full px-4 py-2" placeholder="Enter your password">
+        </div>
+        <div>
+          <label for="confirmPassword" class="block text-gray-600 font-medium mb-1">Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required class="w-full border border-gray-800 rounded-full px-4 py-2" placeholder="Confirm your password">
+        </div>
+        <div>
+          <label for="role" class="block text-gray-600 font-medium mb-1">Role</label>
+          <select id="role" name="role" class="w-full border border-gray-800 rounded-full px-4 py-2">
+            <option value="user" selected>User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="bg-[#3be676] hover:bg-[#2ecc60] text-white font-semibold py-2.5 px-4 rounded-full transition-all transform hover:scale-[1.02] active:scale-95 border border-gray-800 shadow-sm hover:shadow-md cursor-pointer mt-2">Register</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html> 

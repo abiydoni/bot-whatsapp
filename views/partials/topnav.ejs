@@ -1,0 +1,56 @@
+<nav class="w-full flex items-center justify-between px-4 py-4 fixed top-0 left-0 z-40">
+  <div class="flex items-center gap-2">
+    <% if (typeof isIndex !== 'undefined' && isIndex) { %>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/archive/6/6b/20190721182603%21WhatsApp.svg" alt="WhatsApp Logo" class="w-8 h-8">
+    <% } else { %>
+      <a href="/" class="flex items-center justify-center text-gray-600 gap-2">
+        <img src="icons/back-square.svg" class="h-8 w-8" alt="Back">
+      </a>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/archive/6/6b/20190721182603%21WhatsApp.svg" alt="WhatsApp Logo" class="w-8 h-8">
+    <% } %>
+    <h2 class="text-xl font-semibold text-[#3be676] text-right tracking-tight">WhatsApp API</h2>
+  </div>
+  <div class="relative">
+    <% if (typeof user !== 'undefined' && user) { %>
+      <button id="profileBtn" class="flex items-center gap-2 focus:outline-none cursor-pointer">
+        <img src="https://ui-avatars.com/api/?name=<%= user.username %>" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300">
+      </button>
+      <div id="profileMenu" class="hidden absolute right-0 mt-2 w-50 bg-white rounded-[25px] shadow-lg z-50 overflow-hidden">
+          <% if (user.role === 'admin') { %>
+            <a href="/register" class="block px-4 py-2 flex items-center text-sm text-gray-700 hover:bg-gray-100">
+              <img src="icons/user-add.svg" class="h-4 w-4 inline-block mr-2" alt="Back">Create User
+            </a>
+            <a href="/users" class="block px-4 py-2 flex items-center text-sm text-gray-700 hover:bg-gray-100">
+              <img src="icons/user-group.svg" class="h-4 w-4 inline-block mr-2" alt="Back">Manage Users
+            </a>
+          <% } %>
+          <a href="/changepassword" class="block px-4 py-2 flex items-center text-sm text-gray-700 hover:bg-gray-100">
+            <img src="icons/password.svg" class="h-4 w-4 inline-block mr-2" alt="Back">Change Password
+          </a>
+          <a href="/logout" class="block px-4 py-2 flex items-center text-sm text-gray-700 hover:bg-gray-100">
+            <img src="icons/logout.svg" class="h-4 w-4 inline-block mr-2" alt="Back">Logout
+          </a>
+      </div>
+    <% } else { %>
+      <a href="/login" class="bg-[#3be676] hover:bg-[#2ecc60] text-white font-semibold py-2 px-6 rounded-full border border-gray-800 shadow-sm hover:shadow-md transition-all">Login</a>
+    <% } %>
+  </div>
+</nav>
+<div class="h-20"></div>
+<script src="/js/toast.js"></script>
+<script>
+// Simple dropdown toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('profileBtn');
+    const menu = document.getElementById('profileMenu');
+    if (btn && menu) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function() {
+        menu.classList.add('hidden');
+      });
+    }
+});
+</script>

@@ -1,10 +1,10 @@
 {
-  "name": "bot-whatsapp",
+  "name": "whatsapp-gateway",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "keywords": [],
   "author": "",
@@ -12,17 +12,17 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.17.16",
-    "axios": "^1.9.0",
+    "bcrypt": "^5.1.0",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
-    "qrcode": "^1.5.4"
+    "express-session": "^1.18.1",
+    "fs-extra": "^11.3.0",
+    "nodemon": "^3.1.10",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.2"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/abiydoni/bot-whatsapp.git"
-  },
-  "bugs": {
-    "url": "https://github.com/abiydoni/bot-whatsapp/issues"
-  },
-  "homepage": "https://github.com/abiydoni/bot-whatsapp#readme",
   "description": ""
 }
