@@ -1,25 +1,31 @@
-const pino = require('pino');
-const path = require('path');
-const fs = require('fs-extra');
-const crypto = require('crypto');
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode');
-const DatabaseManager = require('./DatabaseManager');
+const pino = require("pino");
+const path = require("path");
+const fs = require("fs-extra");
+const crypto = require("crypto");
+const axios = require("axios");
+const {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+} = require("@whiskeysockets/baileys");
+const qrcode = require("qrcode");
+const DatabaseManager = require("./DatabaseManager");
+const botConfig = require("../config/botConfig");
 
 class WhatsAppManager {
-
   constructor() {
     this.clients = new Map();
-    this.authBaseDir = path.join(__dirname, '../auth');
+    this.authBaseDir = path.join(__dirname, "../auth");
     this.db = new DatabaseManager();
     this.logger = pino({
-      level: 'info',
+      level: "info",
       transport: {
-        target: 'pino-pretty',
+        target: "pino-pretty",
         options: {
-          colorize: true
-        }
-      }
+          colorize: true,
+        },
+      },
     });
     this.numberToSessionMap = new Map();
   }
@@ -28,38 +34,41 @@ class WhatsAppManager {
   // Utility Methods
   // ----------------------
   generateSessionId() {
-    return crypto.randomBytes(16).toString('hex');
+    return crypto.randomBytes(16).toString("hex");
   }
 
   formatPhoneNumber(phoneNumber) {
-    if (!phoneNumber) throw new Error('Phone number is required');
-    
-    let cleaned = phoneNumber.replace(/\D/g, '');
-    
-    if (cleaned.startsWith('0')) {
-      return '62' + cleaned.substring(1);
-    } 
-    else if (cleaned.startsWith('62')) {
+    if (!phoneNumber) throw new Error("Phone number is required");
+
+    let cleaned = phoneNumber.replace(/\D/g, "");
+
+    if (cleaned.startsWith("0")) {
+      return "62" + cleaned.substring(1);
+    } else if (cleaned.startsWith("62")) {
       return cleaned;
-    }
-    else if (cleaned.startsWith('+62')) {
+    } else if (cleaned.startsWith("+62")) {
       return cleaned.substring(1);
+    } else if (cleaned.length >= 9) {
+      return "62" + cleaned;
     }
-    else if (cleaned.length >= 9) {
-      return '62' + cleaned;
-    }
-    
-    throw new Error('Invalid phone number format');
+
+    throw new Error("Invalid phone number format");
   }
 
   // ----------------------
   // WhatsApp Initialization
   // ----------------------
-  async initWhatsApp(sessionId, numberId, isRecovery = false, owner = null, ownerCompany = null) {
-    console.log('DEBUG initWhatsApp owner param:', owner);
+  async initWhatsApp(
+    sessionId,
+    numberId,
+    isRecovery = false,
+    owner = null,
+    ownerCompany = null
+  ) {
+    console.log("DEBUG initWhatsApp owner param:", owner);
     try {
       const authDir = path.join(this.authBaseDir, sessionId);
-      
+
       if (isRecovery) {
         try {
           // Try to find numberId from database
@@ -68,12 +77,12 @@ class WhatsAppManager {
             numberId = sessionData.numberId;
             ownerCompany = sessionData.ownerCompany;
           }
-          
+
           // If not found in database, try to read from metadata file
           if (!numberId) {
-            const metaFile = path.join(authDir, 'metadata.json');
+            const metaFile = path.join(authDir, "metadata.json");
             try {
-              const metaData = JSON.parse(await fs.readFile(metaFile, 'utf-8'));
+              const metaData = JSON.parse(await fs.readFile(metaFile, "utf-8"));
               numberId = metaData.numberId;
               ownerCompany = metaData.ownerCompany;
             } catch (e) {
@@ -81,31 +90,34 @@ class WhatsAppManager {
             }
           }
         } catch (error) {
-          this.logger.warn(`Failed to recover numberId for ${sessionId}:`, error);
+          this.logger.warn(
+            `Failed to recover numberId for ${sessionId}:`,
+            error
+          );
         }
       } else {
         await fs.mkdir(authDir, { recursive: true });
       }
 
       const { state, saveCreds } = await useMultiFileAuthState(authDir, {
-        logger: this.logger.child({ level: 'silent' })
+        logger: this.logger.child({ level: "silent" }),
       });
-      
+
       const { version } = await fetchLatestBaileysVersion();
-      this.logger.info(`Using WA v${version.join('.')}`);
+      this.logger.info(`Using WA v${version.join(".")}`);
 
       const sock = makeWASocket({
         version,
         auth: {
           creds: state.creds,
-          keys: state.keys
+          keys: state.keys,
         },
         printQRInTerminal: false,
-        logger: this.logger.child({ level: 'error' }),
+        logger: this.logger.child({ level: "error" }),
         markOnlineOnConnect: false,
         syncFullHistory: false,
         defaultQueryTimeoutMs: 0,
-        keepAliveIntervalMs: 30000
+        keepAliveIntervalMs: 30000,
       });
 
       const clientData = {
@@ -121,9 +133,9 @@ class WhatsAppManager {
         authData: state,
         connectedAt: null,
         owner: owner || null,
-        ownerCompany: ownerCompany || null
+        ownerCompany: ownerCompany || null,
       };
-      console.log('DEBUG clientData.owner:', clientData.owner);
+      console.log("DEBUG clientData.owner:", clientData.owner);
 
       if (isRecovery) {
         const sessionData = await this.db.getSession(sessionId);
@@ -133,7 +145,7 @@ class WhatsAppManager {
       }
 
       this.clients.set(sessionId, clientData);
-      
+
       if (numberId && !isRecovery) {
         await this.db.saveSession(sessionId, {
           numberId,
@@ -144,7 +156,7 @@ class WhatsAppManager {
           metadata: { isRecovery: false },
           connectedAt: null,
           owner: owner || null,
-          ownerCompany: ownerCompany || null
+          ownerCompany: ownerCompany || null,
         });
       }
 
@@ -154,7 +166,7 @@ class WhatsAppManager {
         this.logger.info(`Attempting to recover session: ${sessionId}`);
         setTimeout(() => {
           if (!clientData.isConnected) {
-            sock.ev.emit('connection.update', { connection: 'connecting' });
+            sock.ev.emit("connection.update", { connection: "connecting" });
           }
         }, 2000);
       }
@@ -174,40 +186,44 @@ class WhatsAppManager {
   // ----------------------
   setupSocketEvents(sock, sessionId, numberId, saveCreds) {
     const clientData = this.clients.get(sessionId);
-    
-    sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', async (update) => {
+    sock.ev.on("creds.update", saveCreds);
+
+    sock.ev.on("connection.update", async (update) => {
       try {
         const { connection, lastDisconnect, qr } = update;
         clientData.lastActivity = new Date();
-        
+
         this.logger.info(`Connection update for ${numberId || sessionId}:`, {
           connection,
           qr: !!qr,
           currentStatus: clientData.isConnected,
-          lastDisconnect: lastDisconnect?.error?.output?.statusCode
+          lastDisconnect: lastDisconnect?.error?.output?.statusCode,
         });
-        
+
         if (qr) {
           try {
             clientData.qrData = await qrcode.toDataURL(qr);
             clientData.isConnected = false;
             this.logger.info(`QR Code generated for ${numberId || sessionId}`);
           } catch (error) {
-            this.logger.error('QR generation error:', error);
+            this.logger.error("QR generation error:", error);
           }
         }
 
-        if (connection === 'open') {
+        if (connection === "open") {
           clientData.isConnected = true;
           clientData.qrData = null;
           clientData.reconnectAttempts = 0;
           if (!clientData.connectedAt) {
             clientData.connectedAt = new Date();
           }
-          this.logger.info(`✅ WhatsApp ${clientData.isRecovery ? 'recovered' : 'connected'} for ${numberId || sessionId}`);
-          
+          this.logger.info(
+            `✅ WhatsApp ${
+              clientData.isRecovery ? "recovered" : "connected"
+            } for ${numberId || sessionId}`
+          );
+
           // Simpan status session ke database
           await this.db.saveSession(sessionId, {
             numberId: clientData.numberId,
@@ -217,96 +233,151 @@ class WhatsAppManager {
             authData: clientData.authData,
             metadata: { isRecovery: clientData.isRecovery },
             connectedAt: clientData.connectedAt,
-            owner: clientData.owner
+            owner: clientData.owner,
           });
 
           // Notify all connected clients about the connection status change
           if (clientData.clients && clientData.clients.length > 0) {
             const status = this.getSessionStatus(sessionId);
-            this.logger.info(`Sending status update to ${clientData.clients.length} clients:`, status);
-            
+            this.logger.info(
+              `Sending status update to ${clientData.clients.length} clients:`,
+              status
+            );
+
             // Send status update to all connected clients
             for (const client of clientData.clients) {
               try {
                 if (!client.res.writableEnded) {
                   client.res.write(`data: ${JSON.stringify(status)}\n\n`);
-                  this.logger.debug(`Status update sent to client ${client.id}`);
+                  this.logger.debug(
+                    `Status update sent to client ${client.id}`
+                  );
                 } else {
-                  this.logger.warn(`Client ${client.id} connection ended, removing from clients list`);
-                  clientData.clients = clientData.clients.filter(c => c.id !== client.id);
+                  this.logger.warn(
+                    `Client ${client.id} connection ended, removing from clients list`
+                  );
+                  clientData.clients = clientData.clients.filter(
+                    (c) => c.id !== client.id
+                  );
                 }
               } catch (error) {
-                this.logger.error(`Error sending status update to client ${client.id}:`, error);
-                clientData.clients = clientData.clients.filter(c => c.id !== client.id);
+                this.logger.error(
+                  `Error sending status update to client ${client.id}:`,
+                  error
+                );
+                clientData.clients = clientData.clients.filter(
+                  (c) => c.id !== client.id
+                );
               }
             }
           } else {
-            this.logger.warn(`No clients connected to receive status update for session ${sessionId}`);
+            this.logger.warn(
+              `No clients connected to receive status update for session ${sessionId}`
+            );
           }
         }
 
-        if (connection === 'close') {
+        if (connection === "close") {
           clientData.isConnected = false;
           clientData.connectedAt = new Date();
           const shouldReconnect = this.shouldAttemptReconnect(lastDisconnect);
-          
+
           await this.db.saveSession(sessionId, {
             numberId: clientData.numberId,
             isConnected: false,
             createdAt: clientData.createdAt,
             lastActivity: new Date(),
             authData: clientData.authData,
-            metadata: { 
+            metadata: {
               isDisconnected: true,
-              lastDisconnect: new Date().toISOString()
+              lastDisconnect: new Date().toISOString(),
             },
             connectedAt: clientData.connectedAt,
-            owner: clientData.owner
+            owner: clientData.owner,
           });
-          
+
           if (shouldReconnect) {
             clientData.reconnectAttempts++;
-            this.scheduleReconnect(sessionId, numberId, clientData.isRecovery, clientData.owner);
+            this.scheduleReconnect(
+              sessionId,
+              numberId,
+              clientData.isRecovery,
+              clientData.owner
+            );
           } else {
             // Check if it's a conflict error
-            const isConflictError = lastDisconnect?.error?.output?.statusCode === 409;
-            const isDeviceRemoved = lastDisconnect?.error?.output?.statusCode === 401 && 
-                                  lastDisconnect?.error?.output?.content?.[0]?.attrs?.type === 'device_removed';
-            
+            const isConflictError =
+              lastDisconnect?.error?.output?.statusCode === 409;
+            const isDeviceRemoved =
+              lastDisconnect?.error?.output?.statusCode === 401 &&
+              lastDisconnect?.error?.output?.content?.[0]?.attrs?.type ===
+                "device_removed";
+
             if (isDeviceRemoved) {
-              this.logger.warn(`Device removed for session ${sessionId}, cleaning up...`);
+              this.logger.warn(
+                `Device removed for session ${sessionId}, cleaning up...`
+              );
               await this.deleteAuthFiles(sessionId);
               this.clients.delete(sessionId);
               return;
             }
-            
+
             if (isConflictError) {
-              this.logger.warn(`Conflict detected for session ${sessionId}, attempting recovery...`);
+              this.logger.warn(
+                `Conflict detected for session ${sessionId}, attempting recovery...`
+              );
               try {
                 // Try to recover the session
-                await this.initWhatsApp(sessionId, numberId, true, clientData.owner);
-                this.logger.info(`Session ${sessionId} recovered after conflict`);
+                await this.initWhatsApp(
+                  sessionId,
+                  numberId,
+                  true,
+                  clientData.owner
+                );
+                this.logger.info(
+                  `Session ${sessionId} recovered after conflict`
+                );
                 return;
               } catch (recoveryError) {
-                this.logger.error(`Failed to recover session ${sessionId} after conflict:`, recoveryError);
+                this.logger.error(
+                  `Failed to recover session ${sessionId} after conflict:`,
+                  recoveryError
+                );
               }
             }
-            
+
             this.logger.warn(`Session ${sessionId} disconnected permanently`);
-            if (lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut) {
-              this.logger.info(`User logged out from phone for session ${sessionId}`);
+            if (
+              lastDisconnect?.error?.output?.statusCode ===
+              DisconnectReason.loggedOut
+            ) {
+              this.logger.info(
+                `User logged out from phone for session ${sessionId}`
+              );
               await this.deleteAuthFiles(sessionId);
               this.clients.delete(sessionId);
 
               try {
                 const sessionData = await this.db.getSession(sessionId);
                 if (sessionData) {
-                  this.logger.info(`Attempting to recover session ${sessionId} from database...`);
-                  await this.initWhatsApp(sessionId, sessionData.numberId, true, sessionData.owner || null);
-                  this.logger.info(`Session ${sessionId} recovered from database`);
+                  this.logger.info(
+                    `Attempting to recover session ${sessionId} from database...`
+                  );
+                  await this.initWhatsApp(
+                    sessionId,
+                    sessionData.numberId,
+                    true,
+                    sessionData.owner || null
+                  );
+                  this.logger.info(
+                    `Session ${sessionId} recovered from database`
+                  );
                 }
               } catch (recoveryError) {
-                this.logger.error(`Failed to recover session ${sessionId} from database:`, recoveryError);
+                this.logger.error(
+                  `Failed to recover session ${sessionId} from database:`,
+                  recoveryError
+                );
               }
             }
           }
@@ -314,45 +385,128 @@ class WhatsAppManager {
           // Notify all connected clients about the disconnection
           if (clientData.clients && clientData.clients.length > 0) {
             const status = this.getSessionStatus(sessionId);
-            this.logger.info(`Sending disconnection status to ${clientData.clients.length} clients:`, status);
-            
+            this.logger.info(
+              `Sending disconnection status to ${clientData.clients.length} clients:`,
+              status
+            );
+
             for (const client of clientData.clients) {
               try {
                 if (!client.res.writableEnded) {
                   client.res.write(`data: ${JSON.stringify(status)}\n\n`);
-                  this.logger.debug(`Disconnection status sent to client ${client.id}`);
+                  this.logger.debug(
+                    `Disconnection status sent to client ${client.id}`
+                  );
                 } else {
-                  this.logger.warn(`Client ${client.id} connection ended, removing from clients list`);
-                  clientData.clients = clientData.clients.filter(c => c.id !== client.id);
+                  this.logger.warn(
+                    `Client ${client.id} connection ended, removing from clients list`
+                  );
+                  clientData.clients = clientData.clients.filter(
+                    (c) => c.id !== client.id
+                  );
                 }
               } catch (error) {
-                this.logger.error(`Error sending disconnection status to client ${client.id}:`, error);
-                clientData.clients = clientData.clients.filter(c => c.id !== client.id);
+                this.logger.error(
+                  `Error sending disconnection status to client ${client.id}:`,
+                  error
+                );
+                clientData.clients = clientData.clients.filter(
+                  (c) => c.id !== client.id
+                );
               }
             }
           }
         }
       } catch (error) {
-        this.logger.error('Error in connection.update handler:', error);
+        this.logger.error("Error in connection.update handler:", error);
       }
     });
 
-    sock.ev.on('messages.upsert', () => {
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
       clientData.lastActivity = new Date();
+
+      // Bot Auto-Reply Logic
+      if (!botConfig.bot.enabled) return;
+      if (!messages || type !== "notify") return;
+
+      const msg = messages[0];
+      const sender = msg.key.remoteJid;
+
+      // Skip group messages if configured
+      if (botConfig.bot.skipGroupMessages && sender.endsWith("@g.us")) return;
+
+      const text =
+        msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+      if (
+        !text ||
+        text.length < botConfig.message.minLength ||
+        text.length > botConfig.message.maxLength
+      )
+        return;
+
+      if (botConfig.message.logIncoming) {
+        this.logger.info(
+          `${botConfig.bot.logPrefix} Pesan dari ${sender}: ${text}`
+        );
+      }
+
+      const lowerText = text.toLowerCase().trim();
+
+      // Logika Menu Dinamis ===================================================
+      try {
+        const response = await axios.get(
+          `${botConfig.bot.apiUrl}?key=${encodeURIComponent(lowerText)}`,
+          {
+            headers: { "User-Agent": botConfig.bot.userAgent },
+            timeout: botConfig.bot.timeout,
+          }
+        );
+        const reply = response.data.trim();
+
+        if (reply && reply !== "") {
+          await sock.sendMessage(sender, {
+            text: reply,
+          });
+          this.logger.info(
+            `${botConfig.bot.logPrefix} Auto-reply sent to ${sender}`
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `${botConfig.bot.logPrefix} Gagal akses menu.php:`,
+          error.message
+        );
+        try {
+          await sock.sendMessage(sender, {
+            text: botConfig.bot.errorMessage,
+          });
+        } catch (sendError) {
+          this.logger.error(
+            `${botConfig.bot.logPrefix} Gagal kirim error message:`,
+            sendError.message
+          );
+        }
+      }
+      // ========================================================================
     });
   }
 
   shouldAttemptReconnect(lastDisconnect) {
     if (!lastDisconnect?.error) return true;
-    
+
     const statusCode = lastDisconnect.error.output?.statusCode;
-    return statusCode !== DisconnectReason.loggedOut && 
-           statusCode !== DisconnectReason.badSession;
+    return (
+      statusCode !== DisconnectReason.loggedOut &&
+      statusCode !== DisconnectReason.badSession
+    );
   }
 
   scheduleReconnect(sessionId, numberId, isRecovery, owner) {
     const clientData = this.clients.get(sessionId);
-    if (!clientData || clientData.reconnectAttempts >= clientData.maxReconnectAttempts) {
+    if (
+      !clientData ||
+      clientData.reconnectAttempts >= clientData.maxReconnectAttempts
+    ) {
       this.logger.warn(`Max reconnect attempts reached for ${sessionId}`);
       if (numberId) {
         this.removeSessionMapping(numberId);
@@ -362,16 +516,28 @@ class WhatsAppManager {
     }
 
     const delay = Math.min(30000, clientData.reconnectAttempts * 5000);
-    this.logger.warn(`🔄 Reconnecting ${sessionId} in ${delay}ms (attempt ${clientData.reconnectAttempts})`);
+    this.logger.warn(
+      `🔄 Reconnecting ${sessionId} in ${delay}ms (attempt ${clientData.reconnectAttempts})`
+    );
 
     setTimeout(() => {
-      this.initWhatsApp(sessionId, numberId, isRecovery, clientData.owner, clientData.ownerCompany)
-        .catch(error => {
-          this.logger.error(`Reconnect error: ${error.message}`);
-          if (clientData.reconnectAttempts < clientData.maxReconnectAttempts) {
-            this.scheduleReconnect(sessionId, numberId, isRecovery, clientData.owner);
-          }
-        });
+      this.initWhatsApp(
+        sessionId,
+        numberId,
+        isRecovery,
+        clientData.owner,
+        clientData.ownerCompany
+      ).catch((error) => {
+        this.logger.error(`Reconnect error: ${error.message}`);
+        if (clientData.reconnectAttempts < clientData.maxReconnectAttempts) {
+          this.scheduleReconnect(
+            sessionId,
+            numberId,
+            isRecovery,
+            clientData.owner
+          );
+        }
+      });
     }, delay);
   }
 
@@ -381,13 +547,23 @@ class WhatsAppManager {
   async recoverSessions() {
     try {
       const sessions = await this.db.getAllSessions();
-      
+
       for (const session of sessions) {
         try {
-          this.logger.info(`Attempting to recover session: ${session.sessionId}`);
-          await this.initWhatsApp(session.sessionId, session.numberId, true, session.owner || null);
+          this.logger.info(
+            `Attempting to recover session: ${session.sessionId}`
+          );
+          await this.initWhatsApp(
+            session.sessionId,
+            session.numberId,
+            true,
+            session.owner || null
+          );
         } catch (error) {
-          this.logger.error(`Error recovering session ${session.sessionId}:`, error);
+          this.logger.error(
+            `Error recovering session ${session.sessionId}:`,
+            error
+          );
         }
       }
     } catch (error) {
@@ -398,8 +574,10 @@ class WhatsAppManager {
   async deleteAuthFiles(sessionId) {
     const authDir = path.join(this.authBaseDir, sessionId);
     try {
-      if (!await fs.pathExists(authDir)) {
-        this.logger.warn(`Auth directory does not exist for session ${sessionId}`);
+      if (!(await fs.pathExists(authDir))) {
+        this.logger.warn(
+          `Auth directory does not exist for session ${sessionId}`
+        );
         return true;
       }
 
@@ -407,7 +585,10 @@ class WhatsAppManager {
       this.logger.info(`Auth directory deleted for session ${sessionId}`);
       return true;
     } catch (err) {
-      this.logger.error(`Error deleting auth directory for session ${sessionId}:`, err);
+      this.logger.error(
+        `Error deleting auth directory for session ${sessionId}:`,
+        err
+      );
       return false;
     }
   }
@@ -415,13 +596,13 @@ class WhatsAppManager {
   async logout(sessionId) {
     const clientData = this.clients.get(sessionId);
     if (!clientData) return false;
-  
+
     try {
       if (clientData.sock) {
         await clientData.sock.end();
         await clientData.sock.ws.close();
       }
-  
+
       const now = new Date();
       await this.db.saveSession(sessionId, {
         numberId: clientData.numberId,
@@ -431,10 +612,10 @@ class WhatsAppManager {
         authData: clientData.authData,
         metadata: {
           isDisconnected: true,
-          lastDisconnect: now.toISOString()
+          lastDisconnect: now.toISOString(),
         },
         connectedAt: now,
-        owner: clientData.owner
+        owner: clientData.owner,
       });
 
       this.clients.set(sessionId, {
@@ -443,7 +624,7 @@ class WhatsAppManager {
         sock: null,
         qrData: null,
         lastActivity: now,
-        connectedAt: now
+        connectedAt: now,
       });
 
       return true;
@@ -457,8 +638,8 @@ class WhatsAppManager {
   async recoverSession(sessionId) {
     try {
       const authDir = path.join(this.authBaseDir, sessionId);
-      const metaFile = path.join(authDir, 'metadata.json');
-      
+      const metaFile = path.join(authDir, "metadata.json");
+
       // Check if session exists in auth directory
       try {
         await fs.access(authDir);
@@ -470,14 +651,19 @@ class WhatsAppManager {
       // Read metadata
       let metadata;
       try {
-        metadata = JSON.parse(await fs.readFile(metaFile, 'utf-8'));
+        metadata = JSON.parse(await fs.readFile(metaFile, "utf-8"));
       } catch (error) {
         this.logger.warn(`No metadata found for session ${sessionId}`);
         return false;
       }
 
       // Initialize WhatsApp with recovery mode
-      await this.initWhatsApp(sessionId, metadata.numberId, true, metadata.owner || null);
+      await this.initWhatsApp(
+        sessionId,
+        metadata.numberId,
+        true,
+        metadata.owner || null
+      );
       this.logger.info(`Session ${sessionId} recovered successfully`);
       return true;
     } catch (error) {
@@ -504,7 +690,7 @@ class WhatsAppManager {
       this.logger.warn(`No client data found for session ${sessionId}`);
       return null;
     }
-    
+
     const status = {
       isConnected: clientData.isConnected,
       qrReady: !!clientData.qrData,
@@ -513,7 +699,7 @@ class WhatsAppManager {
       connectionStatus: clientData.sock?.connectionStatus,
       reconnectAttempts: clientData.reconnectAttempts,
       maxReconnectAttempts: clientData.maxReconnectAttempts,
-      connectedAt: clientData.connectedAt || null
+      connectedAt: clientData.connectedAt || null,
     };
 
     this.logger.debug(`Session status for ${sessionId}:`, status);
@@ -524,7 +710,9 @@ class WhatsAppManager {
     await this.db.deleteSession(sessionId);
     await this.deleteAuthFiles(sessionId);
     this.clients.delete(sessionId);
-    this.logger.info(`Session ${sessionId} deleted from db, auth files, and memory.`);
+    this.logger.info(
+      `Session ${sessionId} deleted from db, auth files, and memory.`
+    );
   }
 }
 
