@@ -97,6 +97,17 @@ class WhatsAppManager {
         }
       } else {
         await fs.mkdir(authDir, { recursive: true });
+
+        // Simpan metadata untuk session baru
+        const metaFile = path.join(authDir, "metadata.json");
+        const metadata = {
+          numberId,
+          ownerCompany,
+          createdAt: new Date().toISOString(),
+          sessionId,
+        };
+        await fs.writeFile(metaFile, JSON.stringify(metadata, null, 2));
+        this.logger.info(`Metadata saved for session ${sessionId}`);
       }
 
       const { state, saveCreds } = await useMultiFileAuthState(authDir, {
@@ -114,10 +125,13 @@ class WhatsAppManager {
         },
         printQRInTerminal: false,
         logger: this.logger.child({ level: "error" }),
-        markOnlineOnConnect: false,
+        markOnlineOnConnect: true, // Mark online untuk mencegah disconnect
         syncFullHistory: false,
         defaultQueryTimeoutMs: 0,
-        keepAliveIntervalMs: 30000,
+        keepAliveIntervalMs: 15000, // Lebih sering keep-alive
+        connectTimeoutMs: 60000, // Timeout yang lebih lama
+        retryRequestDelayMs: 2000,
+        maxRetries: 5,
       });
 
       const clientData = {
@@ -127,7 +141,7 @@ class WhatsAppManager {
         numberId,
         isRecovery,
         reconnectAttempts: 0,
-        maxReconnectAttempts: 5,
+        maxReconnectAttempts: 10, // Meningkatkan max attempts
         createdAt: new Date(),
         lastActivity: null,
         authData: state,
@@ -147,20 +161,38 @@ class WhatsAppManager {
       this.clients.set(sessionId, clientData);
 
       if (numberId && !isRecovery) {
-        await this.db.saveSession(sessionId, {
+        // Gunakan sessionId yang stabil untuk database
+        const stableSessionId = this.generateStableSessionId(numberId);
+        await this.db.saveSession(stableSessionId, {
           numberId,
           isConnected: false,
           createdAt: new Date(),
           lastActivity: null,
           authData: state,
-          metadata: { isRecovery: false },
+          metadata: {
+            isRecovery: false,
+            originalSessionId: sessionId,
+            stableSessionId: stableSessionId,
+          },
           connectedAt: null,
           owner: owner || null,
           ownerCompany: ownerCompany || null,
         });
+
+        // Update session mapping dengan sessionId yang stabil
+        this.numberToSessionMap.set(numberId, stableSessionId);
+        this.logger.info(
+          `📝 Session mapping updated: ${numberId} -> ${stableSessionId}`
+        );
       }
 
       this.setupSocketEvents(sock, sessionId, numberId, saveCreds);
+
+      // Setup periodic health check untuk session ini
+      this.setupHealthCheck(sessionId, numberId);
+
+      // Setup periodic ping untuk menjaga session tetap aktif
+      this.setupPeriodicPing(sessionId);
 
       if (isRecovery && state.creds.registered) {
         this.logger.info(`Attempting to recover session: ${sessionId}`);
@@ -224,17 +256,47 @@ class WhatsAppManager {
             } for ${numberId || sessionId}`
           );
 
-          // Simpan status session ke database
-          await this.db.saveSession(sessionId, {
+          // Simpan status session ke database dengan sessionId yang stabil
+          const stableSessionId = this.generateStableSessionId(
+            clientData.numberId
+          );
+          await this.db.saveSession(stableSessionId, {
             numberId: clientData.numberId,
             isConnected: true,
             createdAt: clientData.createdAt,
             lastActivity: new Date(),
             authData: clientData.authData,
-            metadata: { isRecovery: clientData.isRecovery },
+            metadata: {
+              isRecovery: clientData.isRecovery,
+              lastConnected: new Date().toISOString(),
+              reconnectAttempts: clientData.reconnectAttempts,
+              stableSessionId: stableSessionId,
+            },
             connectedAt: clientData.connectedAt,
             owner: clientData.owner,
           });
+
+          // Update metadata file dengan status terbaru
+          try {
+            const metaFile = path.join(
+              this.authBaseDir,
+              sessionId,
+              "metadata.json"
+            );
+            const existingMeta = await fs
+              .readFile(metaFile, "utf-8")
+              .catch(() => "{}");
+            const metadata = JSON.parse(existingMeta);
+            metadata.lastConnected = new Date().toISOString();
+            metadata.isConnected = true;
+            metadata.stableSessionId = stableSessionId;
+            await fs.writeFile(metaFile, JSON.stringify(metadata, null, 2));
+          } catch (error) {
+            this.logger.warn(
+              `Failed to update metadata for session ${sessionId}:`,
+              error
+            );
+          }
 
           // Notify all connected clients about the connection status change
           if (clientData.clients && clientData.clients.length > 0) {
@@ -282,7 +344,15 @@ class WhatsAppManager {
           clientData.connectedAt = new Date();
           const shouldReconnect = this.shouldAttemptReconnect(lastDisconnect);
 
-          await this.db.saveSession(sessionId, {
+          this.logger.warn(
+            `🔴 Connection closed for ${sessionId} (${numberId}) - Attempting auto-recovery...`
+          );
+
+          // Simpan status disconnect dengan sessionId yang stabil
+          const stableSessionId = this.generateStableSessionId(
+            clientData.numberId
+          );
+          await this.db.saveSession(stableSessionId, {
             numberId: clientData.numberId,
             isConnected: false,
             createdAt: clientData.createdAt,
@@ -291,6 +361,8 @@ class WhatsAppManager {
             metadata: {
               isDisconnected: true,
               lastDisconnect: new Date().toISOString(),
+              disconnectReason: lastDisconnect?.error?.output?.statusCode,
+              stableSessionId: stableSessionId,
             },
             connectedAt: clientData.connectedAt,
             owner: clientData.owner,
@@ -298,6 +370,9 @@ class WhatsAppManager {
 
           if (shouldReconnect) {
             clientData.reconnectAttempts++;
+            this.logger.info(
+              `🔄 Scheduling reconnect for ${sessionId} (attempt ${clientData.reconnectAttempts})`
+            );
             this.scheduleReconnect(
               sessionId,
               numberId,
@@ -540,14 +615,31 @@ class WhatsAppManager {
     if (!lastDisconnect?.error) return true;
 
     const statusCode = lastDisconnect.error.output?.statusCode;
-    return (
-      statusCode !== DisconnectReason.loggedOut &&
-      statusCode !== DisconnectReason.badSession
-    );
+
+    // Skip reconnect jika:
+    // 1. User logout manual dari WhatsApp app
+    // 2. Device dihapus dari WhatsApp
+    // 3. Session dihapus manual dari aplikasi
+    if (statusCode === DisconnectReason.loggedOut) {
+      this.logger.warn(
+        "User logged out manually from WhatsApp app, not attempting reconnect"
+      );
+      return false;
+    }
+
+    // Untuk semua error lain (network, server issues, dll), tetap coba reconnect
+    this.logger.info(`Attempting reconnect for error code: ${statusCode}`);
+    return true;
   }
 
   scheduleReconnect(sessionId, numberId, isRecovery, owner) {
     const clientData = this.clients.get(sessionId);
+
+    // Reset reconnect attempts jika sudah berhasil connect sebelumnya
+    if (clientData && clientData.isConnected) {
+      clientData.reconnectAttempts = 0;
+    }
+
     if (
       !clientData ||
       clientData.reconnectAttempts >= clientData.maxReconnectAttempts
@@ -560,19 +652,28 @@ class WhatsAppManager {
       return;
     }
 
-    const delay = Math.min(30000, clientData.reconnectAttempts * 5000);
+    // Delay yang lebih pendek untuk reconnect yang lebih cepat
+    const delay = Math.min(15000, clientData.reconnectAttempts * 3000);
     this.logger.warn(
       `🔄 Reconnecting ${sessionId} in ${delay}ms (attempt ${clientData.reconnectAttempts})`
     );
 
-    setTimeout(() => {
-      this.initWhatsApp(
-        sessionId,
-        numberId,
-        isRecovery,
-        clientData.owner,
-        clientData.ownerCompany
-      ).catch((error) => {
+    setTimeout(async () => {
+      try {
+        // Pastikan menggunakan sessionId yang sama untuk reconnect
+        const stableSessionId = this.generateStableSessionId(numberId);
+        this.logger.info(
+          `🔄 Using stable sessionId: ${stableSessionId} for ${numberId}`
+        );
+
+        await this.initWhatsApp(
+          stableSessionId,
+          numberId,
+          isRecovery,
+          clientData.owner,
+          clientData.ownerCompany
+        );
+      } catch (error) {
         this.logger.error(`Reconnect error: ${error.message}`);
         if (clientData.reconnectAttempts < clientData.maxReconnectAttempts) {
           this.scheduleReconnect(
@@ -582,8 +683,111 @@ class WhatsAppManager {
             clientData.owner
           );
         }
-      });
+      }
     }, delay);
+  }
+
+  // ----------------------
+  // Health Check & Auto Recovery
+  // ----------------------
+  setupHealthCheck(sessionId, numberId) {
+    // Health check setiap 2 menit untuk memastikan session tetap aktif
+    const healthCheckInterval = setInterval(async () => {
+      try {
+        const clientData = this.clients.get(sessionId);
+        if (!clientData) {
+          clearInterval(healthCheckInterval);
+          return;
+        }
+
+        // Jika session tidak connected, coba reconnect
+        if (
+          !clientData.isConnected &&
+          clientData.reconnectAttempts < clientData.maxReconnectAttempts
+        ) {
+          // Cek apakah ada manual logout/delete
+          try {
+            const sessionData = await this.db.getSession(sessionId);
+            if (
+              sessionData?.metadata?.isManualLogout ||
+              sessionData?.metadata?.isManualDelete
+            ) {
+              this.logger.info(
+                `🛑 Health check: Session ${sessionId} was manually logged out/deleted, skipping recovery`
+              );
+              clearInterval(healthCheckInterval);
+              return;
+            }
+          } catch (error) {
+            this.logger.warn(
+              `Failed to check session metadata for ${sessionId}:`,
+              error
+            );
+          }
+
+          this.logger.info(
+            `🔄 Health check: Session ${sessionId} not connected, attempting recovery...`
+          );
+          clientData.reconnectAttempts++;
+
+          // Gunakan sessionId yang stabil untuk recovery
+          const stableSessionId = this.generateStableSessionId(numberId);
+          this.logger.info(
+            `🔄 Health check using stable sessionId: ${stableSessionId}`
+          );
+
+          await this.initWhatsApp(
+            stableSessionId,
+            numberId,
+            true,
+            clientData.owner,
+            clientData.ownerCompany
+          );
+        } else if (clientData.isConnected) {
+          // Reset reconnect attempts jika sudah connected
+          clientData.reconnectAttempts = 0;
+          this.logger.debug(`✅ Health check: Session ${sessionId} is healthy`);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Health check error for session ${sessionId}:`,
+          error
+        );
+      }
+    }, 120000); // 2 menit
+
+    // Simpan interval ID untuk cleanup nanti
+    const clientData = this.clients.get(sessionId);
+    if (clientData) {
+      clientData.healthCheckInterval = healthCheckInterval;
+    }
+  }
+
+  setupPeriodicPing(sessionId) {
+    // Ping setiap 30 detik untuk menjaga session tetap aktif
+    const pingInterval = setInterval(async () => {
+      try {
+        const clientData = this.clients.get(sessionId);
+        if (!clientData || !clientData.isConnected || !clientData.sock) {
+          clearInterval(pingInterval);
+          return;
+        }
+
+        // Update last activity
+        clientData.lastActivity = new Date();
+
+        // Log ping untuk debugging
+        this.logger.debug(`🏓 Ping sent for session ${sessionId}`);
+      } catch (error) {
+        this.logger.error(`Ping error for session ${sessionId}:`, error);
+      }
+    }, 30000); // 30 detik
+
+    // Simpan interval ID untuk cleanup nanti
+    const clientData = this.clients.get(sessionId);
+    if (clientData) {
+      clientData.pingInterval = pingInterval;
+    }
   }
 
   // ----------------------
@@ -595,11 +799,26 @@ class WhatsAppManager {
 
       for (const session of sessions) {
         try {
+          // Skip recovery jika ada manual logout/delete
+          if (
+            session.metadata?.isManualLogout ||
+            session.metadata?.isManualDelete
+          ) {
+            this.logger.info(
+              `🛑 Skipping recovery for manually logged out session: ${session.sessionId} (${session.numberId})`
+            );
+            continue;
+          }
+
+          // Gunakan sessionId yang stabil untuk recovery
+          const stableSessionId = this.generateStableSessionId(
+            session.numberId
+          );
           this.logger.info(
-            `Attempting to recover session: ${session.sessionId}`
+            `Attempting to recover session: ${stableSessionId} (${session.numberId})`
           );
           await this.initWhatsApp(
-            session.sessionId,
+            stableSessionId,
             session.numberId,
             true,
             session.owner || null
@@ -643,35 +862,66 @@ class WhatsAppManager {
     if (!clientData) return false;
 
     try {
+      // Cleanup intervals
+      if (clientData.healthCheckInterval) {
+        clearInterval(clientData.healthCheckInterval);
+        this.logger.info(
+          `Health check interval cleared for session ${sessionId}`
+        );
+      }
+
+      if (clientData.pingInterval) {
+        clearInterval(clientData.pingInterval);
+        this.logger.info(`Ping interval cleared for session ${sessionId}`);
+      }
+
       if (clientData.sock) {
         await clientData.sock.end();
         await clientData.sock.ws.close();
       }
 
       const now = new Date();
-      await this.db.saveSession(sessionId, {
+
+      // Generate new sessionId untuk memaksa QR scan ulang
+      const newSessionId = this.generateSessionId();
+      this.logger.info(
+        `🔄 Manual logout: Generating new sessionId ${newSessionId} for ${clientData.numberId}`
+      );
+
+      // Simpan dengan sessionId baru untuk memaksa QR scan ulang
+      await this.db.saveSession(newSessionId, {
         numberId: clientData.numberId,
         isConnected: false,
-        createdAt: clientData.createdAt,
+        createdAt: now,
         lastActivity: now,
-        authData: clientData.authData,
+        authData: null, // Reset auth data
         metadata: {
-          isDisconnected: true,
-          lastDisconnect: now.toISOString(),
+          isManualLogout: true,
+          lastManualLogout: now.toISOString(),
+          previousSessionId: sessionId,
+          requiresNewQR: true,
         },
-        connectedAt: now,
+        connectedAt: null,
         owner: clientData.owner,
       });
 
-      this.clients.set(sessionId, {
-        ...clientData,
-        isConnected: false,
-        sock: null,
-        qrData: null,
-        lastActivity: now,
-        connectedAt: now,
-      });
+      // Hapus session lama dari memory
+      this.clients.delete(sessionId);
 
+      // Hapus auth files lama
+      await this.deleteAuthFiles(sessionId);
+
+      // Update session mapping dengan sessionId baru
+      if (clientData.numberId) {
+        this.numberToSessionMap.set(clientData.numberId, newSessionId);
+        this.logger.info(
+          `📝 Session mapping updated after logout: ${clientData.numberId} -> ${newSessionId}`
+        );
+      }
+
+      this.logger.info(
+        `✅ Manual logout completed for ${sessionId} -> ${newSessionId}`
+      );
       return true;
     } catch (error) {
       this.logger.error(`Logout error for ${sessionId}:`, error);
@@ -721,8 +971,22 @@ class WhatsAppManager {
   // Session Accessors
   // ----------------------
   getSessionByNumber(numberId) {
-    const sessionId = this.numberToSessionMap.get(numberId);
-    return sessionId ? this.clients.get(sessionId) : null;
+    // Gunakan sessionId yang stabil untuk lookup
+    const stableSessionId = this.generateStableSessionId(numberId);
+    return this.clients.get(stableSessionId);
+  }
+
+  getStableSessionId(numberId) {
+    return this.generateStableSessionId(numberId);
+  }
+
+  // Method untuk mendapatkan sessionId yang stabil (public)
+  generateStableSessionId(numberId) {
+    if (!numberId) {
+      return this.generateSessionId();
+    }
+    // Gunakan hash dari numberId untuk sessionId yang konsisten
+    return crypto.createHash("md5").update(numberId).digest("hex");
   }
 
   getSessionById(sessionId) {
@@ -752,12 +1016,70 @@ class WhatsAppManager {
   }
 
   async deleteSession(sessionId) {
-    await this.db.deleteSession(sessionId);
-    await this.deleteAuthFiles(sessionId);
-    this.clients.delete(sessionId);
-    this.logger.info(
-      `Session ${sessionId} deleted from db, auth files, and memory.`
-    );
+    try {
+      const clientData = this.clients.get(sessionId);
+      if (clientData) {
+        // Cleanup health check interval
+        if (clientData.healthCheckInterval) {
+          clearInterval(clientData.healthCheckInterval);
+          this.logger.info(
+            `Health check interval cleared for session ${sessionId}`
+          );
+        }
+
+        // Cleanup ping interval
+        if (clientData.pingInterval) {
+          clearInterval(clientData.pingInterval);
+          this.logger.info(`Ping interval cleared for session ${sessionId}`);
+        }
+
+        if (clientData.sock) {
+          clientData.sock.logout();
+        }
+
+        // Generate new sessionId untuk memaksa QR scan ulang
+        const newSessionId = this.generateSessionId();
+        this.logger.info(
+          `🗑️ Manual delete: Generating new sessionId ${newSessionId} for ${clientData.numberId}`
+        );
+
+        // Simpan dengan sessionId baru untuk memaksa QR scan ulang
+        await this.db.saveSession(newSessionId, {
+          numberId: clientData.numberId,
+          isConnected: false,
+          createdAt: new Date(),
+          lastActivity: new Date(),
+          authData: null, // Reset auth data
+          metadata: {
+            isManualDelete: true,
+            lastManualDelete: new Date().toISOString(),
+            previousSessionId: sessionId,
+            requiresNewQR: true,
+          },
+          connectedAt: null,
+          owner: clientData.owner,
+        });
+
+        // Update session mapping dengan sessionId baru
+        if (clientData.numberId) {
+          this.numberToSessionMap.set(clientData.numberId, newSessionId);
+          this.logger.info(
+            `📝 Session mapping updated after delete: ${clientData.numberId} -> ${newSessionId}`
+          );
+        }
+      }
+
+      await this.db.deleteSession(sessionId);
+      await this.deleteAuthFiles(sessionId);
+      this.clients.delete(sessionId);
+      this.logger.info(
+        `Session ${sessionId} deleted and new sessionId ${newSessionId} created for QR scan.`
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(`Error deleting session ${sessionId}:`, error);
+      return false;
+    }
   }
 }
 

@@ -73,8 +73,47 @@ app.use("/", botRoutes(whatsappManager));
 app.use("/", userRoutes(db));
 
 // SERVER INITIALIZATION
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   whatsappManager.logger.info(`🚀 Server running on http://localhost:${PORT}`);
   await whatsappManager.recoverSessions();
   whatsappManager.logger.info("Session recovery completed");
+});
+
+// Graceful shutdown untuk menyimpan session state
+process.on("SIGINT", async () => {
+  whatsappManager.logger.info("🛑 Shutting down gracefully...");
+
+  // Simpan semua session state dengan sessionId yang stabil
+  for (const [sessionId, clientData] of whatsappManager.clients.entries()) {
+    try {
+      const stableSessionId = whatsappManager.generateStableSessionId(
+        clientData.numberId
+      );
+      await whatsappManager.db.saveSession(stableSessionId, {
+        numberId: clientData.numberId,
+        isConnected: clientData.isConnected,
+        createdAt: clientData.createdAt,
+        lastActivity: new Date(),
+        authData: clientData.authData,
+        metadata: {
+          isRecovery: clientData.isRecovery,
+          lastShutdown: new Date().toISOString(),
+          reconnectAttempts: clientData.reconnectAttempts,
+          stableSessionId: stableSessionId,
+        },
+        connectedAt: clientData.connectedAt,
+        owner: clientData.owner,
+      });
+      whatsappManager.logger.info(
+        `Session ${stableSessionId} (${clientData.numberId}) state saved`
+      );
+    } catch (error) {
+      whatsappManager.logger.error(
+        `Failed to save session ${sessionId}:`,
+        error
+      );
+    }
+  }
+
+  process.exit(0);
 });
