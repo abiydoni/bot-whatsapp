@@ -50,7 +50,8 @@ app.route("/message", createMessageController());
  */
 app.route("/profile", createProfileController());
 
-const port = env.PORT;
+// Port priority: NODEJS_PORT (cPanel) > PORT (environment) > 5001 (default)
+const port = env.NODEJS_PORT || env.PORT || 5001;
 
 serve(
   {
@@ -58,7 +59,10 @@ serve(
     port,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
+    console.log(`🚀 Server is running on http://localhost:${info.port}`);
+    console.log(`📋 Environment: ${env.NODE_ENV}`);
+    console.log(`🔌 Port: ${info.port}`);
+    console.log(`🌐 Access URL: https://botwa.appsbee.my.id`);
   }
 );
 

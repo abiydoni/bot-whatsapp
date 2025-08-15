@@ -10,5 +10,10 @@ export const env = z
       .default("5001")
       .transform((e) => Number(e)),
     WEBHOOK_BASE_URL: z.string().optional(),
+    // Untuk cPanel Node.js Apps, port akan diatur otomatis
+    NODEJS_PORT: z
+      .string()
+      .optional()
+      .transform((e) => (e ? Number(e) : undefined)),
   })
   .parse(process.env);

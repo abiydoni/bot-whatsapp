@@ -2,4 +2,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home2/appsbeem/botwa.appsbee.my.id
+    - npm install
+    - npm run build
     - /bin/cp -R * $DEPLOYPATH
