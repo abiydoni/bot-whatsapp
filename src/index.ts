@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
-import moment from "moment";
 import { globalErrorMiddleware } from "./middlewares/error.middleware";
 import { notFoundMiddleware } from "./middlewares/notfound.middleware";
 import { serve } from "@hono/node-server";
@@ -19,7 +18,7 @@ const app = new Hono();
 
 app.use(
   logger((...params) => {
-    params.map((e) => console.log(`${moment().toISOString()} | ${e}`));
+    params.map((e) => console.log(`${new Date().toISOString()} | ${e}`));
   })
 );
 app.use(cors());
@@ -27,12 +26,7 @@ app.use(cors());
 app.onError(globalErrorMiddleware);
 app.notFound(notFoundMiddleware);
 
-app.use(
-  "/media/*",
-  serveStatic({
-    root: "./",
-  })
-);
+app.use("/media/*", serveStatic({ root: "./" }));
 
 app.route("/session", createSessionController());
 app.route("/message", createMessageController());
@@ -40,21 +34,12 @@ app.route("/profile", createProfileController());
 
 const port = env.PORT;
 
-serve(
-  {
-    fetch: app.fetch,
-    port,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
-  }
-);
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`Server is running on http://localhost:${info.port}`);
+});
 
-// Webhook implementation
 if (env.WEBHOOK_BASE_URL) {
-  const webhookProps: CreateWebhookProps = {
-    baseUrl: env.WEBHOOK_BASE_URL,
-  };
+  const webhookProps = { baseUrl: env.WEBHOOK_BASE_URL };
 
   whatsapp.onMessageReceived(createWebhookMessage(webhookProps));
 
