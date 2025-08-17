@@ -62,10 +62,6 @@ serve(
   }
 );
 
-whatsapp.onConnected((session) => {
-  console.log(`session: '${session}' connected`);
-});
-
 // Implement Webhook
 if (env.WEBHOOK_BASE_URL) {
   const webhookProps: CreateWebhookProps = {
@@ -89,6 +85,11 @@ if (env.WEBHOOK_BASE_URL) {
   whatsapp.onDisconnected((session) => {
     console.log(`session: '${session}' disconnected`);
     webhookSession({ session, status: "disconnected" });
+  });
+} else {
+  // Default event handlers when webhook is not configured
+  whatsapp.onConnected((session) => {
+    console.log(`session: '${session}' connected`);
   });
 }
 // End Implement Webhook
