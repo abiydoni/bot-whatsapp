@@ -1,51 +1,40 @@
 {
-	"name": "whatsapp-gateway",
-	"version": "1.0.0",
-	"description": "Simple WhatsApp Gateway, Built Using Baileys, Express, Sequelize & mazer",
-	"main": "./server/config/index.js",
-	"type": "module",
-	"scripts": {
-		"start": "node ./server/config/index.js"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/fawwaz37/whatsapp-gateway.git"
-	},
-	"keywords": [
-		"express",
-		"api",
-		"bot",
-		"whatsapp-gateway",
-		"whatsapp bot",
-		"mysql",
-		"express",
-		"nodejs"
-	],
-	"author": "zekais",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/fawwaz37/whatsapp-gateway/issues"
-	},
-	"homepage": "https://github.com/fawwaz37/whatsapp-gateway#readme",
-	"dependencies": {
-		"@adiwajshing/keyed-db": "^0.2.4",
-		"@hapi/boom": "^10.0.0",
-		"@whiskeysockets/baileys": "^6.4.1",
-		"axios": "^0.27.2",
-		"chalk": "^5.0.1",
-		"connect-flash": "^0.1.1",
-		"dotenv": "^16.0.1",
-		"ejs": "^3.1.8",
-		"express": "^4.18.1",
-		"express-ejs-layouts": "^2.5.1",
-		"express-fileupload": "^1.4.0",
-		"express-session": "^1.17.3",
-		"moment-timezone": "^0.5.37",
-		"mysql2": "^2.3.3",
-		"pino": "^8.0.0",
-		"qrcode": "^1.5.1",
-		"sequelize": "^6.21.3",
-		"sharp": "^0.30.7",
-		"socket.io": "^4.5.1"
-	}
+  "name": "wa-gateway",
+  "version": "4.3.2",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "author": {
+    "name": "mimamch",
+    "email": "mimamch28@gmail.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@hono/zod-validator": "^0.4.1",
+    "axios": "^1.8.2",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "debug": "~2.6.9",
+    "dotenv": "^16.0.0",
+    "ejs": "^3.1.8",
+    "express": "^4.18.2",
+    "hono": "^4.6.13",
+    "http-errors": "~1.6.3",
+    "moment": "^2.29.4",
+    "morgan": "~1.9.1",
+    "qrcode": "^1.5.1",
+    "tsx": "^4.19.2",
+    "wa-multi-session": "^3.8.3",
+    "zod": "^3.23.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mimamch/wa-gateway.git"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/qrcode": "^1.5.5"
+  }
 }
