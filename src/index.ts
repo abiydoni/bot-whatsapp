@@ -27,9 +27,6 @@ app.use(cors());
 app.onError(globalErrorMiddleware);
 app.notFound(notFoundMiddleware);
 
-/**
- * serve media message static files
- */
 app.use(
   "/media/*",
   serveStatic({
@@ -37,17 +34,8 @@ app.use(
   })
 );
 
-/**
- * session routes
- */
 app.route("/session", createSessionController());
-/**
- * message routes
- */
 app.route("/message", createMessageController());
-/**
- * profile routes
- */
 app.route("/profile", createProfileController());
 
 const port = env.PORT;
@@ -62,36 +50,34 @@ serve(
   }
 );
 
-// Implement Webhook
+// Webhook implementation
 if (env.WEBHOOK_BASE_URL) {
   const webhookProps: CreateWebhookProps = {
     baseUrl: env.WEBHOOK_BASE_URL,
   };
 
-  // message webhook
   whatsapp.onMessageReceived(createWebhookMessage(webhookProps));
 
-  // session webhook
   const webhookSession = createWebhookSession(webhookProps);
 
   whatsapp.onConnected((session) => {
     console.log(`session: '${session}' connected`);
     webhookSession({ session, status: "connected" });
   });
+
   whatsapp.onConnecting((session) => {
     console.log(`session: '${session}' connecting`);
     webhookSession({ session, status: "connecting" });
   });
+
   whatsapp.onDisconnected((session) => {
     console.log(`session: '${session}' disconnected`);
     webhookSession({ session, status: "disconnected" });
   });
 } else {
-  // Default event handlers when webhook is not configured
   whatsapp.onConnected((session) => {
     console.log(`session: '${session}' connected`);
   });
 }
-// End Implement Webhook
 
 whatsapp.loadSessionsFromStorage();
