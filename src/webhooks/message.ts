@@ -27,10 +27,11 @@ export const createWebhookMessage =
 
     const endpoint = `${props.baseUrl}/message`;
 
-    const image = await handleWebhookImageMessage(message);
-    const video = await handleWebhookVideoMessage(message);
-    const document = await handleWebhookDocumentMessage(message);
-    const audio = await handleWebhookAudioMessage(message);
+    // Untuk stabilitas awal: nonaktifkan ekstraksi media agar webhook ringan
+    const image = null;
+    const video = null;
+    const document = null;
+    const audio = null;
 
     const body = {
       session: message.sessionId,

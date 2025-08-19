@@ -2,15 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createWebhookMessage = void 0;
 const _1 = require(".");
-const media_1 = require("./media");
 const createWebhookMessage = (props) => async (message) => {
     if (message.key.fromMe || message.key.remoteJid?.includes("broadcast"))
         return;
     const endpoint = `${props.baseUrl}/message`;
-    const image = await (0, media_1.handleWebhookImageMessage)(message);
-    const video = await (0, media_1.handleWebhookVideoMessage)(message);
-    const document = await (0, media_1.handleWebhookDocumentMessage)(message);
-    const audio = await (0, media_1.handleWebhookAudioMessage)(message);
+    // Untuk stabilitas awal: nonaktifkan ekstraksi media agar webhook ringan
+    const image = null;
+    const video = null;
+    const document = null;
+    const audio = null;
     const body = {
         session: message.sessionId,
         from: message.key.remoteJid ?? null,
