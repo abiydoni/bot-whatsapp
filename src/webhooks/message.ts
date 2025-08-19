@@ -56,5 +56,14 @@ export const createWebhookMessage =
         audio,
       },
     } satisfies WebhookMessageBody;
-    webhookClient.post(endpoint, body).catch(console.error);
+
+    // Debug log untuk memastikan webhook terkirim
+    try {
+      console.log(
+        `WEBHOOK -> ${endpoint} | from=${body.from} | hasMsg=${!!body.message}`
+      );
+      await webhookClient.post(endpoint, body);
+    } catch (err) {
+      console.error("WEBHOOK ERROR:", err);
+    }
   };
