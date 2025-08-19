@@ -33,14 +33,11 @@ const createWebhookMessage = (props) => async (message) => {
             audio,
         },
     };
-    // Debug log untuk memastikan webhook terkirim
-    try {
-        console.log(`WEBHOOK -> ${endpoint} | from=${body.from} | hasMsg=${!!body.message}`);
-        await _1.webhookClient.post(endpoint, body);
-    }
-    catch (err) {
+    // Debug log + fire-and-forget agar tidak menghambat event loop
+    console.log(`WEBHOOK -> ${endpoint} | from=${body.from} | hasMsg=${!!body.message}`);
+    _1.webhookClient.post(endpoint, body).catch((err) => {
         console.error("WEBHOOK ERROR:", err);
-    }
+    });
 };
 exports.createWebhookMessage = createWebhookMessage;
 //# sourceMappingURL=message.js.map

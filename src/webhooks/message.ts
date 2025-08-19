@@ -57,13 +57,11 @@ export const createWebhookMessage =
       },
     } satisfies WebhookMessageBody;
 
-    // Debug log untuk memastikan webhook terkirim
-    try {
-      console.log(
-        `WEBHOOK -> ${endpoint} | from=${body.from} | hasMsg=${!!body.message}`
-      );
-      await webhookClient.post(endpoint, body);
-    } catch (err) {
+    // Debug log + fire-and-forget agar tidak menghambat event loop
+    console.log(
+      `WEBHOOK -> ${endpoint} | from=${body.from} | hasMsg=${!!body.message}`
+    );
+    webhookClient.post(endpoint, body).catch((err) => {
       console.error("WEBHOOK ERROR:", err);
-    }
+    });
   };
