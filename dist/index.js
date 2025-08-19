@@ -54,12 +54,15 @@ app.use((0, logger_1.logger)((...params) => {
 app.use((0, cors_1.cors)());
 app.onError(error_middleware_1.globalErrorMiddleware);
 app.notFound(notfound_middleware_1.notFoundMiddleware);
+// Health check endpoint untuk memastikan app up
+app.get("/", (c) => c.json({ ok: true }));
 app.use("/media/*", (0, serve_static_1.serveStatic)({ root: "./" }));
 app.route("/session", (0, session_1.createSessionController)());
 app.route("/message", (0, message_1.createMessageController)());
 app.route("/profile", (0, profile_1.createProfileController)());
 const port = env_1.env.PORT;
-(0, node_server_1.serve)({ fetch: app.fetch, port }, (info) => {
+const hostname = process.env.HOST || "0.0.0.0";
+(0, node_server_1.serve)({ fetch: app.fetch, port, hostname }, (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);
 });
 if (env_1.env.WEBHOOK_BASE_URL) {

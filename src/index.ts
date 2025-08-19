@@ -26,6 +26,9 @@ app.use(cors());
 app.onError(globalErrorMiddleware);
 app.notFound(notFoundMiddleware);
 
+// Health check endpoint untuk memastikan app up
+app.get("/", (c) => c.json({ ok: true }));
+
 app.use("/media/*", serveStatic({ root: "./" }));
 
 app.route("/session", createSessionController());
@@ -33,8 +36,9 @@ app.route("/message", createMessageController());
 app.route("/profile", createProfileController());
 
 const port = env.PORT;
+const hostname = process.env.HOST || "0.0.0.0";
 
-serve({ fetch: app.fetch, port }, (info) => {
+serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`Server is running on http://localhost:${info.port}`);
 });
 
