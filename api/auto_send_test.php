@@ -12,11 +12,6 @@ $gatewayKey  = get_konfigurasi('gateway_key'); // opsional
 include $filePesan;
 $message = $pesan;
 
-// Jika pesan kosong atau berisi "kosong", hentikan proses
-if (empty(trim($message)) || stripos($message, 'kosong') !== false) {
-    exit;
-}
-
 // Tentukan endpoint WA Gateway baru
 $apiUrl = rtrim((string)$gatewayBase, '/');
 if (stripos($apiUrl, '/message') === false) {
