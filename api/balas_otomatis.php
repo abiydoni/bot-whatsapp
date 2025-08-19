@@ -26,6 +26,14 @@ if (!$fromJid || $pesanMasuk === '') {
     exit;
 }
 
+// Khusus bot private: abaikan pesan dari grup
+if (substr($fromJid, -5) === '@g.us') {
+    $log = "[" . date("Y-m-d H:i:s") . "] Ignored group: $fromJid | In: $pesanMasuk\n";
+    file_put_contents("log-balas-wa.txt", $log, FILE_APPEND);
+    echo json_encode(['status' => 'ignored', 'reason' => 'group_message']);
+    exit;
+}
+
 // Koneksi database & konfigurasi
 require 'db.php';
 require 'get_konfigurasi.php';
