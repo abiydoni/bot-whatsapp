@@ -56,12 +56,18 @@ const createMessageController = () => {
                 message: "Session does not exist",
             });
         }
-        await whatsapp.sendTyping({
-            sessionId: payload.session,
-            to: payload.to,
-            duration: Math.min(5000, payload.text.length * 100),
-            isGroup: payload.is_group,
-        });
+        // Stabilitas: typing bisa gagal saat koneksi drop. Abaikan jika error.
+        try {
+            await whatsapp.sendTyping({
+                sessionId: payload.session,
+                to: payload.to,
+                duration: Math.min(1500, payload.text.length * 50),
+                isGroup: payload.is_group,
+            });
+        }
+        catch (err) {
+            console.warn("sendTyping skipped:", err?.message || err);
+        }
         const response = await whatsapp.sendTextMessage({
             sessionId: payload.session,
             to: payload.to,
@@ -103,12 +109,17 @@ const createMessageController = () => {
                 message: "Session does not exist",
             });
         }
-        await whatsapp.sendTyping({
-            sessionId: payload.session,
-            to: payload.to,
-            duration: Math.min(5000, payload.text.length * 100),
-            isGroup: payload.is_group,
-        });
+        try {
+            await whatsapp.sendTyping({
+                sessionId: payload.session,
+                to: payload.to,
+                duration: Math.min(1500, payload.text.length * 50),
+                isGroup: payload.is_group,
+            });
+        }
+        catch (err) {
+            console.warn("sendTyping skipped:", err?.message || err);
+        }
         const response = await whatsapp.sendImage({
             sessionId: payload.session,
             to: payload.to,
@@ -131,12 +142,17 @@ const createMessageController = () => {
                 message: "Session does not exist",
             });
         }
-        await whatsapp.sendTyping({
-            sessionId: payload.session,
-            to: payload.to,
-            duration: Math.min(5000, payload.text.length * 100),
-            isGroup: payload.is_group,
-        });
+        try {
+            await whatsapp.sendTyping({
+                sessionId: payload.session,
+                to: payload.to,
+                duration: Math.min(1500, payload.text.length * 50),
+                isGroup: payload.is_group,
+            });
+        }
+        catch (err) {
+            console.warn("sendTyping skipped:", err?.message || err);
+        }
         const response = await whatsapp.sendDocument({
             sessionId: payload.session,
             to: payload.to,
